@@ -30,6 +30,23 @@ class FieldStats:
     days_filled: int
 
 
+@dataclass(frozen=True)
+class UserRow:
+    """One person's numbers for one field, as used by the group table and the rank table."""
+
+    user: object
+    stats: FieldStats
+    streaks: object  # Streaks, or None when the field has no streak
+
+
+@dataclass(frozen=True)
+class GroupSummary:
+    people: int
+    total: int
+    average_per_person: float
+    average_per_person_per_day: float
+
+
 def number(value):
     """A value as a number for totals: not entered = 0, yes = 1."""
     if value is None or value is False:
@@ -39,21 +56,26 @@ def number(value):
     return value
 
 
-def load_days(user, start=None, end=None):
-    """All of a user's entries (optionally within a date range) as {date: Day}."""
-    entries = SadhanaEntry.objects.filter(user=user).prefetch_related("values__field")
+def load_days_for_users(users, start=None, end=None):
+    """Entries of several users (optionally within a date range) as {user_id: {date: Day}}."""
+    entries = SadhanaEntry.objects.filter(user__in=users).prefetch_related("values__field")
     if start:
         entries = entries.filter(date__gte=start)
     if end:
         entries = entries.filter(date__lte=end)
-    return {
-        entry.date: Day(
+    result = {user.pk: {} for user in users}
+    for entry in entries:
+        result[entry.user_id][entry.date] = Day(
             date=entry.date,
             on_time=is_on_time(entry.created_at, entry.date),
             values={row.field_id: row.value for row in entry.values.all()},
         )
-        for entry in entries
-    }
+    return result
+
+
+def load_days(user, start=None, end=None):
+    """All of one user's entries (optionally within a date range) as {date: Day}."""
+    return load_days_for_users([user], start, end)[user.pk]
 
 
 def average_days(period, date_joined, today):
@@ -120,3 +142,40 @@ def heatmap(days, field, today):
 
 def is_measurable(field):
     return field.is_numeric or field.field_type == SadhanaField.FieldType.BOOLEAN
+
+
+def user_rows(users, days_by_user, field, period, today):
+    """A UserRow per user for one field."""
+    return [
+        UserRow(
+            user=user,
+            stats=field_stats(days_by_user[user.pk], field, period, user.date_joined, today),
+            streaks=field_streaks(days_by_user[user.pk], field, today) if field.has_streak else None,
+        )
+        for user in users
+    ]
+
+
+def group_summary(rows, period, today):
+    """Total over the people in scope, and the average per person (overall and per day)."""
+    people = len(rows)
+    total = sum(row.stats.total for row in rows)
+    per_person = total / people if people else 0
+    days = max((min(period.end, today) - period.start).days + 1, 0)
+    return GroupSummary(
+        people=people,
+        total=total,
+        average_per_person=round(per_person, 1),
+        average_per_person_per_day=round(per_person / days, 1) if days else 0.0,
+    )
+
+
+def community_series(users, days_by_user, field, period):
+    """Per calendar day of the period: the group's total, and the average per person."""
+    totals = [0] * period.days
+    for user in users:
+        for index, value in enumerate(series(days_by_user[user.pk], field, period)):
+            totals[index] += value
+    people = len(users)
+    averages = [round(total / people, 1) if people else 0 for total in totals]
+    return totals, averages

@@ -7,7 +7,6 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy
 from django.views.decorators.http import require_POST
 
 from audit.services import get_client_ip
@@ -18,19 +17,6 @@ from .services import analytics, dates, entries
 from .services.fields import effective_fields
 
 RECENT_DAYS = 7
-
-
-def placeholder(title, phase):
-    """Stand-in page for a screen that a later build phase will replace."""
-
-    def view(request):
-        return render(request, "placeholder.html", {"title": title, "phase": phase})
-
-    return view
-
-
-ranks = placeholder(gettext_lazy("Ranks"), 5)
-analysis = placeholder(gettext_lazy("Analysis"), 5)
 
 
 def _entry_owner(request):

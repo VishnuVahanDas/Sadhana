@@ -106,3 +106,24 @@
 .heat-2 { background: #EE9A55; }
 .heat-3 { background: #E8751A; }
 .heat-4 { background: #7A1F2B; }
+
+@layer components {
+  .sort-header {
+    @apply cursor-pointer select-none whitespace-nowrap px-3 py-3;
+  }
+  .sort-header[aria-sort="ascending"]::after {
+    content: " ▲";
+  }
+  .sort-header[aria-sort="descending"]::after {
+    content: " ▼";
+  }
+  .rank-badge {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream-dark text-sm font-semibold;
+  }
+  .rank-top {
+    @apply bg-gold/30 text-xl;
+  }
+  .rank-me {
+    @apply bg-gold/15 ring-2 ring-inset ring-saffron;
+  }
+}

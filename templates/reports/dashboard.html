@@ -53,14 +53,8 @@
 {% if charts %}
 <section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
   <h2 class="text-lg font-bold text-maroon">{% translate "Daily trend" %}</h2>
-  {% for chart in charts %}
-    <div class="card">
-      <h3 class="mb-2 font-sans text-sm font-semibold">{{ chart.title }}{% if chart.unit %} <span class="font-normal text-ink/60">({{ chart.unit }})</span>{% endif %}</h3>
-      <div class="relative h-56"><canvas data-chart="{{ forloop.counter0 }}" role="img" aria-label="{{ chart.title }}"></canvas></div>
-    </div>
-  {% endfor %}
+  {% include "partials/charts.html" %}
   <p class="text-xs text-ink/60">{% translate "Tap a name in the legend to hide or show it. The same numbers are in the table below." %}</p>
-  {{ charts|json_script:"chart-data" }}
 </section>
 {% endif %}
 
@@ -105,7 +99,10 @@
 {% endif %}
 
 <section aria-label="{% translate 'Entries' %}">
-  <h2 class="mb-2 text-lg font-bold text-maroon">{% translate "Entries" %} <span class="text-sm font-normal text-ink/60">({{ rows|length }})</span></h2>
+  <div class="mb-2 flex items-center justify-between gap-2">
+    <h2 class="text-lg font-bold text-maroon">{% translate "Entries" %} <span class="text-sm font-normal text-ink/60">({{ rows|length }})</span></h2>
+    {% url 'dashboard_export' person.pk as export_url %}{% include "partials/export_link.html" with url=export_url %}
+  </div>
   {% if rows %}
     <div class="card overflow-x-auto !p-0">
       <table class="w-full text-left text-sm">
@@ -140,6 +137,5 @@
   {% endif %}
 </section>
 
-<script src="{% static 'js/chart.umd.min.js' %}" defer></script>
-<script src="{% static 'js/dashboard.js' %}" defer></script>
+{% if not charts %}<script src="{% static 'js/dashboard.js' %}" defer></script>{% endif %}
 {% endblock %}

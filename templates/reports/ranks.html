@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Ranks" %} · {{ site_title }}{% endblock %}
+{% block content %}
+<div class="mb-3 flex items-center justify-between gap-2">
+  <h1 class="text-xl font-bold text-maroon">{% translate "Ranks" %}</h1>
+  {% url 'ranks_export' as export_url %}{% include "partials/export_link.html" with url=export_url %}
+</div>
+
+{% if field %}
+<form method="get" class="card mb-3 grid grid-cols-2 gap-3">
+  {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+  <div>
+    <label for="metric" class="mb-1 block text-sm font-medium">{% translate "Metric" %}</label>
+    <select id="metric" name="metric" class="input" data-autosubmit>
+      {% for choice in fields %}
+        <option value="{{ choice.key }}" {% if choice == field %}selected{% endif %}>{{ choice.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="by" class="mb-1 block text-sm font-medium">{% translate "Rank by" %}</label>
+    <select id="by" name="by" class="input" data-autosubmit>
+      {% for choice in options %}
+        <option value="{{ choice.key }}" {% if choice == option %}selected{% endif %}>{{ choice.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-span-2">
+    <label for="coordinator" class="mb-1 block text-sm font-medium">{% translate "Group" %}</label>
+    <select id="coordinator" name="coordinator" class="input" data-autosubmit>
+      <option value="">{% translate "All devotees" %}</option>
+      {% for person in coordinators %}
+        <option value="{{ person.pk }}" {% if person == coordinator %}selected{% endif %}>{{ person.display_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if option.uses_period %}
+  {% include "partials/period_picker.html" %}
+{% else %}
+  <p class="mb-4 text-xs text-ink/70">{% translate "Streaks are live and all-time, so no period applies." %}</p>
+{% endif %}
+
+{# Mobile: cards #}
+<ol class="space-y-2 sm:hidden">
+  {% for item in ranked %}
+    <li class="card flex min-h-[56px] items-center gap-3 !py-3 {% if item.row.user == user %}rank-me{% endif %}">
+      <span class="rank-badge {% if item.rank <= 3 %}rank-top{% endif %}">{% if item.rank == 1 %}🥇{% elif item.rank == 2 %}🥈{% elif item.rank == 3 %}🥉{% else %}{{ item.rank }}{% endif %}</span>
+      <a href="{% url 'dashboard' item.row.user.pk %}" class="min-w-0 flex-1">
+        <span class="block truncate font-serif text-base font-bold">{{ item.row.user.display_name }}</span>
+        <span class="block truncate text-xs text-ink/70">{% if item.row.user.coordinator %}{{ item.row.user.coordinator.display_name }}{% else %}&nbsp;{% endif %}</span>
+      </a>
+      <span class="text-lg font-semibold">{{ item.value }}</span>
+    </li>
+  {% empty %}
+    <li class="card text-sm text-ink/70">{% translate "No active devotees in this group." %}</li>
+  {% endfor %}
+</ol>
+
+{# Desktop: table #}
+<div class="card hidden overflow-x-auto !p-0 sm:block">
+  <table class="w-full text-left text-sm">
+    <thead class="bg-cream-dark/60 text-xs uppercase tracking-wide text-ink/70">
+      <tr>
+        <th class="px-3 py-2">{% translate "Rank" %}</th>
+        <th class="px-3 py-2">{% translate "Name" %}</th>
+        <th class="px-3 py-2">{% translate "Coordinator" %}</th>
+        <th class="px-3 py-2 text-right">{{ option.label }}{% if option.uses_period and field.unit and option.key != "days_filled" %} ({{ field.unit }}){% endif %}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-cream-dark">
+      {% for item in ranked %}
+        <tr class="{% if item.row.user == user %}rank-me{% endif %}">
+          <td class="px-3 py-2"><span class="rank-badge {% if item.rank <= 3 %}rank-top{% endif %}">{% if item.rank == 1 %}🥇{% elif item.rank == 2 %}🥈{% elif item.rank == 3 %}🥉{% else %}{{ item.rank }}{% endif %}</span></td>
+          <td class="px-3 py-2 font-medium"><a class="underline" href="{% url 'dashboard' item.row.user.pk %}">{{ item.row.user.display_name }}</a></td>
+          <td class="px-3 py-2">{% if item.row.user.coordinator %}{{ item.row.user.coordinator.display_name }}{% else %}—{% endif %}</td>
+          <td class="px-3 py-2 text-right text-base font-semibold">{{ item.value }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="card text-sm text-ink/70">{% translate "No rankable fields are active." %}</p>
+{% endif %}
+{% endblock %}

@@ -57,3 +57,25 @@ document.addEventListener("change", function (event) {
     }
   }
 });
+
+// Sortable tables: tap a heading to sort by that column; tap again to reverse.
+document.addEventListener("click", function (event) {
+  var header = event.target.closest("table[data-sortable] th[data-sort]");
+  if (!header) return;
+  var table = header.closest("table");
+  var body = table.tBodies[0];
+  var index = Array.prototype.indexOf.call(header.parentNode.children, header);
+  var numeric = header.getAttribute("data-sort") === "number";
+  var current = header.getAttribute("aria-sort");
+  var ascending = current ? current === "descending" : !numeric;
+  var rows = Array.prototype.slice.call(body.rows).filter(function (row) { return row.cells.length > index; });
+  rows.sort(function (a, b) {
+    var x = a.cells[index].textContent.trim();
+    var y = b.cells[index].textContent.trim();
+    var result = numeric ? (parseFloat(x) || 0) - (parseFloat(y) || 0) : x.localeCompare(y);
+    return ascending ? result : -result;
+  });
+  rows.forEach(function (row) { body.appendChild(row); });
+  table.querySelectorAll("th[aria-sort]").forEach(function (other) { other.removeAttribute("aria-sort"); });
+  header.setAttribute("aria-sort", ascending ? "ascending" : "descending");
+});

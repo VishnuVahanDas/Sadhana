@@ -1,0 +1,10 @@
+{% load static %}
+{% for chart in charts %}
+  <div class="card">
+    <h3 class="mb-2 font-sans text-sm font-semibold">{{ chart.title }}{% if chart.unit %} <span class="font-normal text-ink/60">({{ chart.unit }})</span>{% endif %}</h3>
+    <div class="relative h-56"><canvas data-chart="{{ forloop.counter0 }}" role="img" aria-label="{{ chart.title }}"></canvas></div>
+  </div>
+{% endfor %}
+{{ charts|json_script:"chart-data" }}
+<script src="{% static 'js/chart.umd.min.js' %}" defer></script>
+<script src="{% static 'js/dashboard.js' %}" defer></script>

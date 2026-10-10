@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Analysis" %} · {{ site_title }}{% endblock %}
+{% block content %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Analysis" %}</h1>
+
+<form method="get" class="card mb-3 grid grid-cols-2 gap-3">
+  {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+  <div>
+    <label for="coordinator" class="mb-1 block text-sm font-medium">{% translate "Group" %}</label>
+    <select id="coordinator" name="coordinator" class="input" data-autosubmit>
+      <option value="">{% translate "All devotees" %}</option>
+      {% for person in coordinators %}
+        <option value="{{ person.pk }}" {% if person == coordinator %}selected{% endif %}>{{ person.display_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="field" class="mb-1 block text-sm font-medium">{% translate "Field" %}</label>
+    <select id="field" name="field" class="input" data-autosubmit>
+      {% for option in fields %}
+        <option value="{{ option.key }}" {% if option == field %}selected{% endif %}>{{ option.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+{% include "partials/period_picker.html" %}
+
+{% if field %}
+<section aria-label="{% translate 'Summary' %}" class="mb-6 grid grid-cols-3 gap-2 text-center">
+  <div class="card !p-3">
+    <p class="text-xl font-semibold">{{ summary.total }}</p>
+    <p class="text-xs text-ink/70">{% translate "Total" %}{% if field.unit %} ({{ field.unit }}){% endif %}</p>
+  </div>
+  <div class="card !p-3">
+    <p class="text-xl font-semibold">{{ summary.average_per_person }}</p>
+    <p class="text-xs text-ink/70">{% translate "Average per person" %}</p>
+  </div>
+  <div class="card !p-3">
+    <p class="text-xl font-semibold">{{ summary.average_per_person_per_day }}</p>
+    <p class="text-xs text-ink/70">{% translate "Per person per day" %}</p>
+  </div>
+  <p class="col-span-3 text-xs text-ink/70">
+    {% blocktranslate count people=summary.people %}{{ people }} active devotee{% plural %}{{ people }} active devotees{% endblocktranslate %}
+  </p>
+</section>
+
+<section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
+  <h2 class="text-lg font-bold text-maroon">{% translate "Community trend" %}</h2>
+  {% include "partials/charts.html" %}
+</section>
+
+<section aria-label="{% translate 'Devotees' %}" class="mb-6">
+  <div class="mb-2 flex items-center justify-between gap-2">
+    <h2 class="text-lg font-bold text-maroon">{% translate "By devotee" %}</h2>
+    {% url 'analysis_export' as export_url %}{% include "partials/export_link.html" with url=export_url %}
+  </div>
+  <div class="card overflow-x-auto !p-0">
+    <table class="w-full text-left text-sm" data-sortable>
+      <thead class="bg-cream-dark/60 text-xs uppercase tracking-wide text-ink/70">
+        <tr>
+          <th class="sort-header" data-sort="text">{% translate "Name" %}</th>
+          <th class="sort-header" data-sort="text">{% translate "Coordinator" %}</th>
+          <th class="sort-header" data-sort="number" aria-sort="descending">{% translate "Total" %}</th>
+          <th class="sort-header" data-sort="number">{% translate "Daily avg" %}</th>
+          <th class="sort-header" data-sort="number">{% translate "Days filled" %}</th>
+          {% if field.has_streak %}
+            <th class="sort-header" data-sort="number">🔥 {% translate "Streak" %}</th>
+            <th class="sort-header" data-sort="number">⏱ {% translate "On-time" %}</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-cream-dark">
+        {% for row in rows %}
+          <tr {% if row.user == user %}class="bg-gold/15"{% endif %}>
+            <td class="whitespace-nowrap px-3 py-2 font-medium"><a class="inline-flex min-h-[44px] items-center underline" href="{% url 'dashboard' row.user.pk %}">{{ row.user.display_name }}</a></td>
+            <td class="whitespace-nowrap px-3 py-2">{% if row.user.coordinator %}{{ row.user.coordinator.display_name }}{% else %}—{% endif %}</td>
+            <td class="px-3 py-2">{{ row.stats.total }}</td>
+            <td class="px-3 py-2">{{ row.stats.daily_average }}</td>
+            <td class="px-3 py-2">{{ row.stats.days_filled }}</td>
+            {% if field.has_streak %}
+              <td class="px-3 py-2">{{ row.streaks.current }}</td>
+              <td class="px-3 py-2">{{ row.streaks.on_time_current }}</td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-1 text-xs text-ink/60">{% translate "Tap a column heading to sort." %}</p>
+</section>
+{% endif %}
+
+<section aria-label="{% translate 'Not filled today' %}">
+  <h2 class="mb-2 text-lg font-bold text-maroon">{% translate "Not filled today" %} <span class="text-sm font-normal text-ink/60">({{ not_filled|length }})</span></h2>
+  <div class="card">
+    {% if not_filled %}
+      <ul class="flex flex-wrap gap-2">
+        {% for person in not_filled %}
+          <li><a href="{% url 'dashboard' person.pk %}" class="badge min-h-[32px] bg-cream-dark px-3 text-sm">{{ person.display_name }}</a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm">{% translate "Everyone has filled today. Hari bol!" %} 🙏</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
