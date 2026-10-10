@@ -102,16 +102,64 @@ def test_reorder_fields(client, superuser):
     assert [f.key for f in SadhanaField.objects.all()][:3] == ["hearing", "reading", "seva"]
 
 
-def test_apply_to_all_users_replaces_overrides(client, superuser, user, field):
+def test_apply_to_all_users_keeps_own_settings(client, superuser, user, field):
     arati = field("mangala_arati")
     UserFieldSetting.objects.create(user=user, field=arati, enabled=False)
     client.force_login(superuser)
     client.post(reverse("manage_field_apply", args=[arati.pk]), {"enabled": "1"})
-    assert "mangala_arati" in keys(user) and "mangala_arati" in keys(superuser)
-    assert not UserFieldSetting.objects.filter(field=arati).exists()
+    # The devotee who was set individually keeps that; everyone else follows the new default.
+    assert "mangala_arati" not in keys(user) and "mangala_arati" in keys(superuser)
+    assert UserFieldSetting.objects.filter(field=arati).count() == 1
     assert AuditLog.objects.filter(action="field_update", field_key="mangala_arati").count() == 1
     client.post(reverse("manage_field_apply", args=[arati.pk]), {"enabled": "0"})
-    assert "mangala_arati" not in keys(user)
+    assert "mangala_arati" not in keys(superuser)
+
+
+def test_reset_own_settings(client, superuser, user, field):
+    arati = field("mangala_arati")
+    UserFieldSetting.objects.create(user=user, field=arati, enabled=True)
+    client.force_login(user)
+    assert client.post(reverse("manage_field_reset", args=[arati.pk])).status_code == 403
+    client.force_login(superuser)
+    assert "Reset own settings" in client.get(reverse("manage_fields")).content.decode()
+    client.post(reverse("manage_field_reset", args=[arati.pk]))
+    assert not UserFieldSetting.objects.filter(field=arati).exists()
+    assert "mangala_arati" not in keys(user)  # back to the default (off)
+    assert "Reset own settings" not in client.get(reverse("manage_fields")).content.decode()
+
+
+def test_assign_devotees_to_a_field(client, superuser, user, field):
+    arati = field("mangala_arati")
+    page = reverse("manage_field_users", args=[arati.pk])
+    client.force_login(user)
+    assert client.get(page).status_code == 403
+    client.force_login(superuser)
+    rows = client.get(page).context["rows"]
+    assert {row["user"] for row in rows} == {user, superuser} and not any(row["enabled"] for row in rows)
+
+    client.post(page, {"user": [user.pk]})
+    assert "mangala_arati" in keys(user) and "mangala_arati" not in keys(superuser)
+    # Only the devotee that changed gets a setting and an audit row.
+    assert list(UserFieldSetting.objects.filter(field=arati).values_list("user_id", "enabled")) == [(user.pk, True)]
+    log = AuditLog.objects.get(action="field_toggle_user")
+    assert (log.target_user, log.field_key, log.old_value, log.new_value) == (user, "mangala_arati", "False", "True")
+    # An assigned devotee is not touched by "off for all users".
+    client.post(reverse("manage_field_apply", args=[arati.pk]), {"enabled": "0"})
+    assert "mangala_arati" in keys(user)
+
+
+def test_switching_a_field_off_keeps_past_entries(client, superuser, user, field):
+    from datetime import date
+
+    from sadhana.models import EntryValue, SadhanaEntry
+
+    seva = field("seva")
+    entry = SadhanaEntry.objects.create(user=user, date=date(2026, 1, 1))
+    EntryValue.objects.create(entry=entry, field=seva, value_int=30)
+    client.force_login(superuser)
+    client.post(reverse("manage_field_apply", args=[seva.pk]), {"enabled": "0"})
+    assert "seva" not in keys(user)
+    assert EntryValue.objects.filter(entry=entry, field=seva).count() == 1
 
 
 def test_delete_rules(client, superuser, user, field):
@@ -131,7 +179,7 @@ def test_delete_rules(client, superuser, user, field):
 def test_settings_form(client, superuser, user):
     client.force_login(superuser)
     data = {
-        "site_title": "Sadhana Report", "day_rollover_hour": "3", "edit_lock_enabled": "on",
+        "site_title": "Sadhana Report", "theme": "saffron", "day_rollover_hour": "3", "edit_lock_enabled": "on",
         "edit_window_days": "5", "backfill_limit_days": "7",
     }
     assert client.post(reverse("manage_settings"), data).status_code == 302
@@ -183,3 +231,27 @@ def test_audit_viewer_paginates(client, superuser):
     assert len(first.context["page"]) == 50
     assert "action=settings_update&amp;page=2" in first.content.decode()
     assert len(client.get(reverse("manage_audit"), {"page": 2}).context["page"]) == 5
+
+
+def test_new_users_start_with_the_core_fields_only(client, superuser, user, make_user, field):
+    """Migration 0006: optional fields stop being on by default, without changing anyone's current form."""
+    from importlib import import_module
+
+    from django.apps import apps
+
+    arati = field("mangala_arati")
+    arati.enabled_by_default = True
+    arati.save()
+    UserFieldSetting.objects.create(user=user, field=arati, enabled=False)
+    assert "mangala_arati" in keys(superuser) and "mangala_arati" not in keys(user)
+
+    import_module("sadhana.migrations.0006_optional_fields_off_by_default").optional_fields_off_by_default(apps, None)
+
+    assert "mangala_arati" in keys(superuser) and "mangala_arati" not in keys(user)  # nobody's form changed
+    newcomer = make_user(email="new@example.com")
+    assert keys(newcomer) == ["hearing", "reading", "seva", "rounds", "notes"]
+    assert not SadhanaField.objects.filter(is_core=False, enabled_by_default=True).exists()
+    # The add-field form no longer ticks "on by default".
+    client.force_login(superuser)
+    assert client.get(reverse("manage_field_add")).context["form"]["enabled_by_default"].value() is False
+

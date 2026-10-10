@@ -15,7 +15,7 @@ A private, mobile-first Django web app for ISKCON Gorakhpur where ~20–25 devot
 - **Configurable fields** (`SadhanaField`) with types `minutes`, `count`, `time`, `boolean`, `text`, plus per-user enable/disable (`UserFieldSetting`). Seed data per SPEC §4.2.
 - **Edit lock / backfill limit** are settings toggles, **off by default**; superusers are never restricted.
 - **Audit log**: one row per changed field value; append-only.
-- **Streaks**: Hearing, Reading, Seva (and Mangala Arati when enabled). No streak for Rounds. Show both normal and on-time streaks. Logic lives in pure, unit-tested functions in `sadhana/services/streaks.py`.
+- **Streaks**: Hearing, Reading, Seva (and Mangala Arati when enabled). Rounds has a streak on a devotee's own pages only (Today, My Report; any rounds count), never in ranks or analysis. Show both normal and on-time streaks. Logic lives in pure, unit-tested functions in `sadhana/services/streaks.py`.
 - **Time:** all "today" logic in `Asia/Kolkata`; weeks start Monday; day rollover hour 4 AM.
 - **Display names:** always `display_name` (spiritual name, else name). Email is login-only.
 - **i18n-ready:** wrap all user-facing strings in `gettext`/`{% translate %}`; English only for now.

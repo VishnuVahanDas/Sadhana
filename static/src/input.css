@@ -612,3 +612,51 @@
     @apply whitespace-nowrap text-sm font-semibold text-ink;
   }
 }
+
+/* Today: month calendar under the entry form. */
+@layer components {
+  .cal {
+    @apply grid grid-cols-7 gap-1;
+  }
+  .cal-head {
+    @apply pb-1 text-center text-[11px] font-medium uppercase text-ink/60;
+  }
+  .cal-day {
+    @apply relative flex h-11 items-center justify-center rounded-xl border border-transparent text-sm tabular-nums
+      transition active:scale-90;
+  }
+  .cal-filled {
+    @apply border-gold/60 bg-gold/30 font-semibold text-ink;
+  }
+  .cal-missed {
+    @apply border-cream-dark bg-surface text-ink/70;
+  }
+  .cal-off {
+    @apply text-ink/30;
+  }
+  .cal-today {
+    @apply ring-2 ring-saffron ring-offset-1 ring-offset-surface;
+  }
+  .cal-selected {
+    @apply border-transparent font-bold text-cream;
+    background-image: linear-gradient(135deg, rgb(var(--c-maroon)), rgb(var(--c-maroon-dark)));
+  }
+  /* Festival days carry a small dot. */
+  .cal-festival::after {
+    content: "";
+    @apply absolute bottom-1 h-1.5 w-1.5 rounded-full bg-saffron;
+  }
+  .cal-selected.cal-festival::after {
+    @apply bg-gold;
+  }
+  /* Legend swatches reuse the day colours. */
+  .cal-key {
+    @apply relative inline-flex h-4 w-4 items-center justify-center rounded border;
+  }
+  .cal-key.cal-festival {
+    @apply border-cream-dark;
+  }
+  .cal-key.cal-festival::after {
+    @apply bottom-auto;
+  }
+}

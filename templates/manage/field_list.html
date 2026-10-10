@@ -14,10 +14,10 @@
         {% if not field.is_active %}<span class="badge bg-maroon text-cream">{% translate "Inactive" %}</span>{% endif %}
         {% if field.enabled_by_default %}<span class="badge bg-gold/30">{% translate "On by default" %}</span>{% else %}<span class="badge bg-cream-dark">{% translate "Off by default" %}</span>{% endif %}
         {% if field.has_streak %}<span class="badge bg-saffron-light">{% translate "Streak" %}</span>{% endif %}
-        {% if field.is_rankable %}<span class="badge bg-saffron-light">{% translate "Ranked" %}</span>{% endif %}
+        {% if field.is_rankable %}<span class="badge bg-saffron-light">{% if field.is_core %}{% translate "Ranked" %}{% else %}{% translate "On My Report" %}{% endif %}</span>{% endif %}
         {% if field.is_core %}<span class="badge bg-cream-dark">{% translate "Core" %}</span>{% endif %}
       </div>
-      <p class="mt-1 text-sm text-ink/70">{{ field.key }}{% if field.unit %} · {{ field.unit }}{% endif %}</p>
+      <p class="mt-1 text-sm text-ink/70">{{ field.key }}{% if field.unit %} · {{ field.unit }}{% endif %}{% if field.own_settings %} · {% blocktranslate count people=field.own_settings %}{{ people }} devotee has their own setting{% plural %}{{ people }} devotees have their own setting{% endblocktranslate %}{% endif %}</p>
       <div class="mt-3 flex flex-wrap gap-2">
         <form method="post" action="{% url 'manage_field_move' field.pk %}" class="flex gap-2">
           {% csrf_token %}
@@ -25,12 +25,20 @@
           <button name="direction" value="down" class="btn-secondary" aria-label="{% translate 'Move down' %}" {% if forloop.last %}disabled{% endif %}>↓</button>
         </form>
         <a href="{% url 'manage_field_edit' field.pk %}" class="btn-secondary">{% translate "Edit" %}</a>
+        <a href="{% url 'manage_field_users' field.pk %}" class="btn-secondary">{% translate "Assign devotees" %}</a>
         <form method="post" action="{% url 'manage_field_apply' field.pk %}" class="flex gap-2"
-              data-confirm="{% translate 'This replaces every user’s own setting for this field. Continue?' %}">
+              data-confirm="{% translate 'Devotees with their own setting for this field keep it; everyone else changes. Past entries are never deleted. Continue?' %}">
           {% csrf_token %}
           <button name="enabled" value="1" class="btn-secondary">{% translate "On for all users" %}</button>
           <button name="enabled" value="0" class="btn-secondary">{% translate "Off for all users" %}</button>
         </form>
+        {% if field.own_settings %}
+          <form method="post" action="{% url 'manage_field_reset' field.pk %}"
+                data-confirm="{% translate 'This clears every devotee’s own setting for this field, so everyone follows the default. Continue?' %}">
+            {% csrf_token %}
+            <button class="btn-secondary">{% translate "Reset own settings" %}</button>
+          </form>
+        {% endif %}
         {% if not field.is_core and not field.has_values %}
           <form method="post" action="{% url 'manage_field_delete' field.pk %}" data-confirm="{% translate 'Delete this field?' %}">
             {% csrf_token %}

@@ -60,7 +60,7 @@ def test_summary_cards(client, filled, today):
     assert cards["hearing"]["streaks"].current == 2 and cards["hearing"]["streaks"].longest == 2
     assert cards["hearing"]["streaks"].on_time_current == 2
     assert cards["rounds"]["stats"].total == 40
-    assert cards["rounds"]["streaks"] is None  # no streak for Rounds
+    assert cards["rounds"]["streaks"].current == 2  # own pages show a Rounds streak: any rounds count
     html = response.content.decode()
     for text in ["Current streak", "Longest", "On-time current", "On-time longest", "Daily average", "Days filled"]:
         assert text in html
@@ -153,11 +153,11 @@ def test_unknown_user_is_404(client, user):
 def test_home_shows_streak_badges_after_saving(client, user, today):
     client.force_login(user)
     badges = client.get(reverse("home")).context["streak_badges"]
-    assert [badge["field"].key for badge in badges] == ["hearing", "reading", "seva"]
+    assert [badge["field"].key for badge in badges] == ["hearing", "reading", "seva", "rounds"]
     assert all(badge["streaks"].current == 0 for badge in badges)
     response = client.post(reverse("entry", args=[today]), {"hearing": "30"}, follow=True)
     current = {badge["field"].key: badge["streaks"].current for badge in response.context["streak_badges"]}
-    assert current == {"hearing": 1, "reading": 0, "seva": 0}
+    assert current == {"hearing": 1, "reading": 0, "seva": 0, "rounds": 0}
 
 
 def test_devotees_directory(client, user, make_user):

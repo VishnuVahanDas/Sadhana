@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 
 from sadhana.models import Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, comparison, dates, festivals, periods, ranking
-from sadhana.services.fields import effective_fields
+from sadhana.services.fields import effective_fields, has_personal_streak
 
 from .exports import workbook_response
 from .services import scaling
@@ -166,8 +166,12 @@ def _scope(request):
 
 
 def _rankable_field(request, name):
-    """The rankable field picked with ?<name>=<key>, defaulting to the first one."""
-    fields = list(SadhanaField.objects.filter(is_active=True, is_rankable=True))
+    """The field picked with ?<name>=<key>, defaulting to the first one.
+
+    Ranks and analysis compare everyone, so they only offer the core fields (hearing, reading, seva,
+    rounds); optional fields are switched on for some devotees only and show on My Report instead.
+    """
+    fields = list(SadhanaField.objects.filter(is_active=True, is_rankable=True, is_core=True))
     chosen = next((field for field in fields if field.key == request.GET.get(name)), None)
     return fields, chosen or (fields[0] if fields else None)
 
@@ -223,7 +227,7 @@ def dashboard(request, pk):
         {
             "field": field,
             "stats": analytics.field_stats(days, field, period, person.date_joined, today),
-            "streaks": analytics.field_streaks(days, field, today) if field.has_streak else None,
+            "streaks": analytics.field_streaks(days, field, today) if has_personal_streak(field) else None,
         }
         for field in rankable
     ]

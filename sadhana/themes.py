@@ -1,4 +1,4 @@
-"""Temporary theme preview. Remove once a theme is finalised (see the "Theme preview" notes in input.css)."""
+"""Colour themes. Superusers set the site default; each devotee may pick their own in the More menu."""
 
 from django.utils.translation import gettext_lazy as _
 
@@ -26,6 +26,17 @@ THEMES = [
 ]
 
 
+CHOICES = [(key, label) for key, label, _header in THEMES]
+
+
 def header_color(theme):
     """The theme's header colour, or None for an unknown key."""
     return next((header for key, _label, header in THEMES if key == theme), None)
+
+
+def for_user(user, default):
+    """The theme a page is drawn in: the devotee's own choice if valid, else the site default."""
+    own = getattr(user, "theme", "")
+    if header_color(own):
+        return own
+    return default if header_color(default) else DEFAULT

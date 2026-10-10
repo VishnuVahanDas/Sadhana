@@ -52,6 +52,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(_("can log in"), default=True)
     must_change_password = models.BooleanField(_("must change password"), default=True)
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
+    # The devotee's own colour theme (keys in sadhana/themes.py); blank follows the site default.
+    theme = models.CharField(_("theme"), max_length=20, blank=True, default="")
 
     objects = UserManager()
 

@@ -91,28 +91,55 @@ def test_manage_links_only_for_superusers(client, make_user):
         assert reverse(name) in html
 
 
-def test_theme_dropdown_only_for_superusers(client, make_user):
-    client.force_login(make_user())
-    assert 'id="theme-select"' not in client.get(reverse("devotees")).content.decode()
-    client.force_login(make_user(email="admin@example.com", is_superuser=True))
-    assert 'id="theme-select"' in client.get(reverse("devotees")).content.decode()
-
-
-def test_superuser_theme_choice_applies_to_everyone(client, make_user):
+def test_every_devotee_can_pick_their_own_theme(client, make_user):
     devotee = make_user()
-    admin = make_user(email="admin@example.com", is_superuser=True)
-    page, change = reverse("devotees"), reverse("manage_theme")
+    other = make_user(email="other@example.com")
+    page, change = reverse("devotees"), reverse("my_theme")
 
     client.force_login(devotee)
-    assert 'data-theme="saffron"' in client.get(page).content.decode()
-    assert client.post(change, {"theme": "peacock"}).status_code == 403
+    html = client.get(page).content.decode()
+    assert 'id="theme-select"' in html and "Temple default (Saffron" in html and 'data-theme="saffron"' in html
 
-    client.force_login(admin)
     response = client.post(change, {"theme": "peacock", "next": page})
     assert response.status_code == 302 and response.url == page
-    assert client.post(change, {"theme": "no-such-theme", "next": "https://evil.example/"}).url == reverse("home")
-
-    client.force_login(devotee)
     assert 'data-theme="peacock"' in client.get(page).content.decode()
+    # Unknown themes are ignored, and the redirect never leaves the site.
+    assert client.post(change, {"theme": "no-such-theme", "next": "https://evil.example/"}).url == reverse("home")
+    devotee.refresh_from_db()
+    assert devotee.theme == "peacock"
+
+    client.force_login(other)  # someone else is not affected
+    assert 'data-theme="saffron"' in client.get(page).content.decode()
+
+
+def test_default_theme_follows_the_superuser_setting(client, make_user):
+    from sadhana.models import AppSettings
+
+    follower = make_user()
+    chooser = make_user(email="chooser@example.com", theme="lotus")
+    admin = make_user(email="admin@example.com", is_superuser=True)
+    page = reverse("devotees")
+
+    client.force_login(follower)
+    assert client.post(reverse("manage_theme_reset")).status_code == 403
+    client.force_login(admin)
+    data = {"site_title": "Sadhana Report", "theme": "krishna", "day_rollover_hour": "4", "edit_window_days": "7", "backfill_limit_days": "7"}
+    assert client.post(reverse("manage_settings"), data).status_code == 302
+    assert AppSettings.load().theme == "krishna"
+    assert "1 devotee has picked their own theme" in client.get(reverse("manage_settings")).content.decode()
+
+    client.force_login(follower)  # no own choice: follows the new default
+    assert 'data-theme="krishna"' in client.get(page).content.decode()
+    client.force_login(chooser)  # own choice is kept
+    assert 'data-theme="lotus"' in client.get(page).content.decode()
     client.logout()
-    assert 'data-theme="peacock"' in client.get(reverse("login")).content.decode()
+    assert 'data-theme="krishna"' in client.get(reverse("login")).content.decode()
+
+    client.force_login(admin)
+    client.post(reverse("manage_theme_reset"))
+    client.force_login(chooser)
+    assert 'data-theme="krishna"' in client.get(page).content.decode()
+    # Going back to "Temple default" is the empty choice.
+    client.post(reverse("my_theme"), {"theme": "peacock"})
+    client.post(reverse("my_theme"), {"theme": ""})
+    assert 'data-theme="krishna"' in client.get(page).content.decode()

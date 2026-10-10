@@ -8,4 +8,12 @@
   <p class="text-xs text-ink/70">{% translate "Superusers are never restricted by the edit lock or the backfill limit." %}</p>
   <button type="submit" class="btn-primary">{% translate "Save settings" %}</button>
 </form>
+{% if own_themes %}
+  <form method="post" action="{% url 'manage_theme_reset' %}" class="card mt-3 space-y-2"
+        data-confirm="{% translate 'This puts every devotee back on the default theme. Continue?' %}">
+    {% csrf_token %}
+    <p class="text-sm">{% blocktranslate count people=own_themes %}{{ people }} devotee has picked their own theme.{% plural %}{{ people }} devotees have picked their own theme.{% endblocktranslate %}</p>
+    <button type="submit" class="btn-secondary w-full">{% translate "Reset everyone to the default theme" %}</button>
+  </form>
+{% endif %}
 {% endblock %}

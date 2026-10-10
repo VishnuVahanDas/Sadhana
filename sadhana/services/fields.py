@@ -9,3 +9,12 @@ def effective_fields(user):
         for field in SadhanaField.objects.filter(is_active=True)
         if overrides.get(field.id, field.enabled_by_default)
     ]
+
+
+# Rounds has no streak in ranks or analysis (has_streak is off), but devotees see their own on Today and My Report.
+PERSONAL_STREAK_KEYS = {"rounds"}
+
+
+def has_personal_streak(field):
+    """Whether a devotee's own pages (Today, My Report) show a streak for this field."""
+    return field.has_streak or field.key in PERSONAL_STREAK_KEYS

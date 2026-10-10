@@ -1,10 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Exists, Max, OuterRef
+from django.db.models import Count, Exists, Max, OuterRef
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import superuser_required
@@ -12,7 +11,6 @@ from audit import services as audit
 from audit.models import AuditLog
 
 from .manage_forms import AppSettingsForm, FestivalForm, SadhanaFieldForm
-from . import themes
 from .models import AppSettings, EntryValue, Festival, SadhanaField, UserFieldSetting
 
 Action = AuditLog.Action
@@ -30,7 +28,10 @@ def _log_changes(request, action, form, before, *, field_key=None):
 
 
 def _fields_with_usage():
-    return SadhanaField.objects.annotate(has_values=Exists(EntryValue.objects.filter(field=OuterRef("pk"))))
+    return SadhanaField.objects.annotate(
+        has_values=Exists(EntryValue.objects.filter(field=OuterRef("pk"))),
+        own_settings=Count("user_settings"),
+    )
 
 
 # --- Fields ---------------------------------------------------------------
@@ -90,24 +91,71 @@ def field_move(request, pk):
 @require_POST
 @transaction.atomic
 def field_apply_to_all(request, pk):
-    """Switch a field on or off for everyone: set the default and drop the per-user overrides."""
+    """Switch a field on or off for everyone who has no setting of their own: only the default changes."""
     field = get_object_or_404(SadhanaField, pk=pk)
     enabled = request.POST.get("enabled") == "1"
+    kept = UserFieldSetting.objects.filter(field=field).count()
+    audit.log(
+        Action.FIELD_UPDATE, request.user, field_key=field.key,
+        old_value=f"enabled_by_default={field.enabled_by_default}",
+        new_value=f"enabled_by_default={enabled}, own settings kept={kept}",
+        ip=audit.get_client_ip(request),
+    )
+    field.enabled_by_default = enabled
+    field.save(update_fields=["enabled_by_default"])
+    context = {"label": field.label, "kept": kept}
+    if enabled:
+        message = _("“%(label)s” is now on for all users.") % context
+    else:
+        message = _("“%(label)s” is now off for all users.") % context
+    if kept:
+        message += " " + _("%(kept)d devotees with their own setting were not changed.") % context
+    messages.success(request, message)
+    return redirect("manage_fields")
+
+
+@superuser_required
+@require_POST
+@transaction.atomic
+def field_reset(request, pk):
+    """Drop every devotee's own setting for a field, so everyone follows its default again."""
+    field = get_object_or_404(SadhanaField, pk=pk)
     overrides = UserFieldSetting.objects.filter(field=field)
     audit.log(
         Action.FIELD_UPDATE, request.user, field_key=field.key,
-        old_value=f"enabled_by_default={field.enabled_by_default}, user overrides={overrides.count()}",
-        new_value=f"enabled_by_default={enabled}, applied to all users",
+        old_value=f"own settings={overrides.count()}", new_value="own settings cleared",
         ip=audit.get_client_ip(request),
     )
     overrides.delete()
-    field.enabled_by_default = enabled
-    field.save(update_fields=["enabled_by_default"])
-    if enabled:
-        messages.success(request, _("“%(label)s” is now on for all users.") % {"label": field.label})
-    else:
-        messages.success(request, _("“%(label)s” is now off for all users.") % {"label": field.label})
+    messages.success(request, _("Everyone now follows the default for “%(label)s”.") % {"label": field.label})
     return redirect("manage_fields")
+
+
+@superuser_required
+def field_users(request, pk):
+    """Choose which devotees have one field: the per-field view of the per-user settings."""
+    field = get_object_or_404(SadhanaField, pk=pk)
+    overrides = dict(UserFieldSetting.objects.filter(field=field).values_list("user_id", "enabled"))
+    people = get_user_model().objects.order_by("-is_participating", "spiritual_name", "name")
+    rows = [
+        {"user": person, "enabled": overrides.get(person.pk, field.enabled_by_default), "overridden": person.pk in overrides}
+        for person in people
+    ]
+    if request.method == "POST":
+        wanted = set(request.POST.getlist("user"))
+        ip = audit.get_client_ip(request)
+        with transaction.atomic():
+            for row in rows:
+                enabled = str(row["user"].pk) in wanted
+                if enabled != row["enabled"]:
+                    UserFieldSetting.objects.update_or_create(user=row["user"], field=field, defaults={"enabled": enabled})
+                    audit.log(
+                        Action.FIELD_TOGGLE_USER, request.user, target_user=row["user"],
+                        field_key=field.key, old_value=row["enabled"], new_value=enabled, ip=ip,
+                    )
+        messages.success(request, _("Devotees for “%(label)s” have been saved.") % {"label": field.label})
+        return redirect("manage_fields")
+    return render(request, "manage/field_users.html", {"field": field, "rows": rows})
 
 
 @superuser_required
@@ -169,26 +217,21 @@ def app_settings(request):
         _log_changes(request, Action.SETTINGS_UPDATE, form, before)
         messages.success(request, _("Settings have been saved."))
         return redirect("manage_settings")
-    return render(request, "manage/settings.html", {"form": form})
+    own_themes = get_user_model().objects.exclude(theme="").count()
+    return render(request, "manage/settings.html", {"form": form, "own_themes": own_themes})
 
 
 @superuser_required
 @require_POST
-def set_theme(request):
-    """Temporary theme preview: the superuser's choice becomes the theme for everyone."""
-    settings = AppSettings.load()
-    theme = request.POST.get("theme")
-    if themes.header_color(theme) and theme != settings.theme:
-        audit.log(
-            Action.SETTINGS_UPDATE, request.user, field_key="theme",
-            old_value=settings.theme, new_value=theme, ip=audit.get_client_ip(request),
-        )
-        settings.theme = theme
-        settings.save(update_fields=["theme"])
-    back = request.POST.get("next", "")
-    if not url_has_allowed_host_and_scheme(back, allowed_hosts={request.get_host()}):
-        back = "home"
-    return redirect(back)
+def reset_user_themes(request):
+    """Put every devotee back on the default theme."""
+    changed = get_user_model().objects.exclude(theme="").update(theme="")
+    audit.log(
+        Action.SETTINGS_UPDATE, request.user, field_key="theme",
+        old_value=f"own themes={changed}", new_value="everyone on the default theme", ip=audit.get_client_ip(request),
+    )
+    messages.success(request, _("Everyone now uses the default theme."))
+    return redirect("manage_settings")
 
 
 # --- Festivals ------------------------------------------------------------

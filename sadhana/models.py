@@ -159,7 +159,7 @@ class AppSettings(models.Model):
     backfill_limit_days = models.PositiveIntegerField(_("backfill limit (days)"), default=7)
     day_rollover_hour = models.PositiveSmallIntegerField(_("day rollover hour"), default=4)
     site_title = models.CharField(_("site title"), max_length=100, default="Sadhana Report")
-    # Temporary theme preview: the colour theme everyone sees (keys in sadhana/themes.py).
+    # The default colour theme, for the login page and devotees who have not picked their own (keys in sadhana/themes.py).
     theme = models.CharField(_("theme"), max_length=20, default="saffron")
 
     class Meta:

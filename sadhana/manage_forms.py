@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.forms import StyledFormMixin
 
+from . import themes
 from .models import AppSettings, Festival, SadhanaField
 
 FieldType = SadhanaField.FieldType
@@ -19,9 +20,9 @@ class SadhanaFieldForm(StyledFormMixin, forms.ModelForm):
         ]
         labels = {
             "has_streak": _("Count streaks for this field"),
-            "is_rankable": _("Show in the rank table"),
+            "is_rankable": _("Show totals, chart and calendar on My Report (ranks and analysis use the core fields only)"),
             "is_active": _("Active (inactive fields are hidden from all forms; history is kept)"),
-            "enabled_by_default": _("On by default for users without their own setting"),
+            "enabled_by_default": _("On by default for new users and users without their own setting"),
         }
 
     def __init__(self, *args, **kwargs):
@@ -30,6 +31,9 @@ class SadhanaFieldForm(StyledFormMixin, forms.ModelForm):
             # Stored values depend on these two, so they are fixed once the field exists.
             self.fields["key"].disabled = True
             self.fields["field_type"].disabled = True
+        else:
+            # New fields are optional: nobody gets one until it is assigned or switched on for all users.
+            self.fields["enabled_by_default"].initial = False
 
     def clean(self):
         cleaned = super().clean()
@@ -47,10 +51,16 @@ class SadhanaFieldForm(StyledFormMixin, forms.ModelForm):
 
 
 class AppSettingsForm(StyledFormMixin, forms.ModelForm):
+    theme = forms.ChoiceField(
+        label=_("Default theme"),
+        choices=themes.CHOICES,
+        help_text=_("Used on the login page and for devotees who have not picked their own theme."),
+    )
+
     class Meta:
         model = AppSettings
         fields = [
-            "site_title", "day_rollover_hour",
+            "site_title", "theme", "day_rollover_hour",
             "edit_lock_enabled", "edit_window_days",
             "backfill_limit_enabled", "backfill_limit_days",
         ]

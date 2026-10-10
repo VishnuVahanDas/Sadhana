@@ -104,7 +104,7 @@ def test_field_and_period_filters(client, group):
     assert response.context["summary"].total == 60
     assert response.context["rows"][0].streaks is None
     assert "Streak" not in response.content.decode().split("By devotee")[1].split("</thead>")[0]
-    assert [field.key for field in response.context["fields"]] == ["hearing", "reading", "seva", "rounds", "mangala_arati"]
+    assert [field.key for field in response.context["fields"]] == ["hearing", "reading", "seva", "rounds"]
 
 
 def test_community_trend_is_two_charts(client, group):

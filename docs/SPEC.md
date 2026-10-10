@@ -218,7 +218,7 @@ The form must be **fast on mobile** (target: under 30 seconds to fill). Numeric 
 
 ## 6. Streak Engine
 
-Applies only to fields with `has_streak = True` (initially: Hearing, Reading, Seva; Mangala Arati when enabled). **No streak for Rounds** (may be added later via a threshold — keep the engine extensible: `qualifies(value) -> bool` per field, default `value > 0` / `value is True`).
+Applies only to fields with `has_streak = True` (initially: Hearing, Reading, Seva; Mangala Arati when enabled). **Rounds:** no streak in ranks or analysis, but each devotee's own pages (Today, My Report) show a Rounds streak where any rounds above zero count (see `has_personal_streak`). A threshold may be added later, so keep the engine extensible: `qualifies(value) -> bool` per field, default `value > 0` / `value is True`.
 
 ### 6.1 Qualifying day
 A day qualifies for a field if an entry exists for that date **and** its value for that field is > 0 (or `True` for boolean). Missing entry or empty/0 value = not qualifying.

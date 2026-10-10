@@ -13,18 +13,18 @@
       <a href="{% url 'manage_festivals' %}" class="sheet-link">{% translate "Festivals" %}</a>
       <a href="{% url 'manage_settings' %}" class="sheet-link">{% translate "Settings" %}</a>
       <a href="{% url 'manage_audit' %}" class="sheet-link">{% translate "Audit log" %}</a>
-      {# Temporary theme preview: changes the colours for everyone. #}
-      <form method="post" action="{% url 'manage_theme' %}" class="mt-2 px-3">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <label for="theme-select" class="block text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "Theme (for everyone)" %}</label>
-        <select id="theme-select" name="theme" class="input mt-1" data-autosubmit>
-          {% for key, label, color in themes %}
-            <option value="{{ key }}" {% if key == theme %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </form>
     {% endif %}
+    <form method="post" action="{% url 'my_theme' %}" class="mt-2 px-3">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <label for="theme-select" class="block text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "My theme" %}</label>
+      <select id="theme-select" name="theme" class="input mt-1" data-autosubmit>
+        <option value="">{% blocktranslate with name=default_theme_label %}Temple default ({{ name }}){% endblocktranslate %}</option>
+        {% for key, label, color in themes %}
+          <option value="{{ key }}" {% if key == user.theme %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}
       <button type="submit" class="sheet-link text-maroon">{% translate "Logout" %}</button>
