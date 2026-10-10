@@ -545,3 +545,63 @@
     background-image: linear-gradient(90deg, rgb(var(--c-saffron)), rgb(var(--c-gold)));
   }
 }
+
+/* The same look carried to Today, Ranks, Analysis and Devotees. */
+@layer components {
+  .avatar-lg {
+    @apply h-16 w-16 text-3xl;
+  }
+  .avatar-sm {
+    @apply h-10 w-10 text-lg;
+  }
+  .avatar-xs {
+    @apply h-8 w-8 text-sm ring-0;
+  }
+  /* Round previous/next buttons inside a banner. */
+  .hero-btn {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-bar-ink/15 text-2xl leading-none
+      transition active:scale-90;
+  }
+  .hero .day-pill {
+    @apply border-transparent bg-bar-ink/10 text-bar-ink shadow-none;
+  }
+  .hero .day-pill-filled {
+    @apply bg-gold text-saffron-ink;
+  }
+  .hero .day-pill-current {
+    @apply ring-2 ring-bar-ink;
+  }
+  .entry-field {
+    @apply rounded-xl bg-cream/70 p-3;
+  }
+  /* Ranks: first place in the middle and tallest. */
+  .podium {
+    @apply grid grid-cols-3 items-end gap-2;
+  }
+  .podium-place {
+    @apply flex min-w-0 flex-col;
+  }
+  .podium-1 {
+    @apply order-2;
+  }
+  .podium-2 {
+    @apply order-1;
+  }
+  .podium-3 {
+    @apply order-3;
+  }
+  .podium-step {
+    @apply mt-2 flex h-10 items-start justify-center rounded-t-2xl pt-1 text-2xl text-bar-ink;
+    background-image: linear-gradient(rgb(var(--c-bar)), rgb(var(--c-bar-dark)));
+  }
+  .podium-1 .podium-step {
+    @apply h-20;
+    background-image: linear-gradient(rgb(var(--c-saffron)), rgb(var(--c-saffron-dark)));
+  }
+  .podium-2 .podium-step {
+    @apply h-14;
+  }
+  .meter {
+    @apply block;
+  }
+}

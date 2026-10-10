@@ -3,20 +3,19 @@
 {% block title %}{% translate "Ranks" %} · {{ site_title }}{% endblock %}
 {% block content %}
 <div class="mb-3 flex items-center justify-between gap-2">
-  <h1 class="text-xl font-bold text-maroon">{% translate "Ranks" %}</h1>
+  <h1 class="section-title !text-2xl">{% translate "Ranks" %}</h1>
   {% url 'ranks_export' as export_url %}{% include "partials/export_link.html" with url=export_url %}
 </div>
 
 {% if field %}
 <form method="get" class="card mb-3 grid grid-cols-2 gap-3">
   {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
-  <div>
-    <label for="metric" class="mb-1 block text-sm font-medium">{% translate "Metric" %}</label>
-    <select id="metric" name="metric" class="input" data-autosubmit>
-      {% for choice in fields %}
-        <option value="{{ choice.key }}" {% if choice == field %}selected{% endif %}>{{ choice.label }}</option>
-      {% endfor %}
-    </select>
+  {# Metric chips: the hidden input keeps the current metric when another filter submits the form. #}
+  <input type="hidden" name="metric" value="{{ field.key }}">
+  <div class="chip-row col-span-2" role="group" aria-label="{% translate 'Metric' %}">
+    {% for choice in fields %}
+      <button type="submit" name="metric" value="{{ choice.key }}" class="tab {% if choice == field %}tab-active{% endif %}" {% if choice == field %}aria-current="true"{% endif %}>{{ choice.label }}</button>
+    {% endfor %}
   </div>
   <div>
     <label for="by" class="mb-1 block text-sm font-medium">{% translate "Rank by" %}</label>
@@ -46,22 +45,40 @@
 </form>
 
 {% if option.uses_period %}
-  {% include "partials/period_picker.html" %}
+  {% include "partials/period_chips.html" %}
 {% else %}
   <p class="mb-4 text-xs text-ink/70">{% translate "Streaks are live and all-time, so no period applies and festival days always count." %}</p>
 {% endif %}
 
-{# Mobile: cards #}
+{% if ranked|length >= 3 %}
+<ol class="podium mb-4" aria-label="{% translate 'Top three' %}">
+  {% for item in ranked|slice:":3" %}
+    <li class="podium-place podium-{{ forloop.counter }}">
+      <a href="{% url 'dashboard' item.row.user.pk %}" class="flex min-w-0 flex-col items-center">
+        <span class="avatar {% if forloop.first %}avatar-lg{% endif %} {% if item.row.user == user %}rank-me{% endif %}" aria-hidden="true">{{ item.row.user.display_name|first|upper }}</span>
+        <span class="mt-1 line-clamp-2 text-center font-serif text-sm font-bold leading-tight">{{ item.row.user.display_name }}</span>
+        <span class="text-lg font-bold tabular-nums text-maroon">{{ item.value }}</span>
+      </a>
+      <div class="podium-step"><span>{% if item.rank == 1 %}🥇{% elif item.rank == 2 %}🥈{% elif item.rank == 3 %}🥉{% else %}{{ item.rank }}{% endif %}</span></div>
+    </li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+{# Mobile: cards (the podium already shows the first three) #}
 <ol class="space-y-2 sm:hidden">
   {% for item in ranked %}
+    {% if forloop.counter > 3 or ranked|length < 3 %}
     <li class="card flex min-h-[56px] items-center gap-3 !py-3 {% if item.row.user == user %}rank-me{% endif %}">
       <span class="rank-badge {% if item.rank <= 3 %}rank-top{% endif %}">{% if item.rank == 1 %}🥇{% elif item.rank == 2 %}🥈{% elif item.rank == 3 %}🥉{% else %}{{ item.rank }}{% endif %}</span>
       <a href="{% url 'dashboard' item.row.user.pk %}" class="min-w-0 flex-1">
         <span class="block truncate font-serif text-base font-bold">{{ item.row.user.display_name }}</span>
         <span class="block truncate text-xs text-ink/70">{% if item.row.user.coordinator %}{{ item.row.user.coordinator.display_name }}{% else %}&nbsp;{% endif %}</span>
+        <span class="meter mt-1.5" aria-hidden="true"><span style="width: {% widthratio item.value ranked.0.value 100 %}%"></span></span>
       </a>
-      <span class="text-lg font-semibold">{{ item.value }}</span>
+      <span class="text-lg font-semibold tabular-nums">{{ item.value }}</span>
     </li>
+    {% endif %}
   {% empty %}
     <li class="card text-sm text-ink/70">{% translate "No active devotees in this group." %}</li>
   {% endfor %}

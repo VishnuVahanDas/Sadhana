@@ -3,52 +3,58 @@
 {% block title %}{{ date|date:"j M Y" }} · {{ site_title }}{% endblock %}
 {% block content %}
 {% if owner != user %}
-  <p class="mb-3 rounded-lg border border-maroon bg-maroon/10 px-4 py-3 text-sm text-maroon">
+  <p class="mb-3 rounded-xl border border-maroon bg-maroon/10 px-4 py-3 text-sm text-maroon">
     {% blocktranslate with name=owner.display_name %}You are editing the entry of {{ name }}.{% endblocktranslate %}
   </p>
 {% endif %}
 
-<div class="mb-3 flex items-center gap-2">
-  <a href="{{ prev_url }}" class="btn-secondary" aria-label="{% translate 'Previous day' %}">‹</a>
-  <div class="flex-1 text-center">
-    <h1 class="text-xl font-bold text-maroon">
-      {% if is_today %}{% translate "Today" %}{% else %}{{ date|date:"l" }}{% endif %}
-    </h1>
-    <p class="text-sm text-ink/70">{{ date|date:"j F Y" }}</p>
+<div class="hero mb-4">
+  <div class="flex items-center gap-2">
+    <a href="{{ prev_url }}" class="hero-btn" aria-label="{% translate 'Previous day' %}">‹</a>
+    <div class="min-w-0 flex-1 text-center">
+      {% if is_today and owner == user %}
+        <p class="truncate text-xs text-bar-ink/80">{% blocktranslate with name=user.display_name %}Hare Krishna, {{ name }}{% endblocktranslate %} 🙏</p>
+      {% endif %}
+      <h1 class="text-2xl font-bold">
+        {% if is_today %}{% translate "Today" %}{% else %}{{ date|date:"l" }}{% endif %}
+      </h1>
+      <p class="text-sm text-bar-ink/80">{{ date|date:"j F Y" }}</p>
+    </div>
+    {% if next_url %}
+      <a href="{{ next_url }}" class="hero-btn" aria-label="{% translate 'Next day' %}">›</a>
+    {% else %}
+      <span class="hero-btn opacity-40" aria-hidden="true">›</span>
+    {% endif %}
   </div>
-  {% if next_url %}
-    <a href="{{ next_url }}" class="btn-secondary" aria-label="{% translate 'Next day' %}">›</a>
-  {% else %}
-    <span class="btn-secondary opacity-40" aria-hidden="true">›</span>
-  {% endif %}
-</div>
 
-<div class="mb-4 flex gap-1" aria-label="{% translate 'Last 7 days' %}">
-  {% for day in recent %}
-    <a href="{{ day.url }}" class="day-pill {% if day.filled %}day-pill-filled{% endif %} {% if day.current %}day-pill-current{% endif %}"
-       title="{% if day.filled %}{% translate 'Filled' %}{% else %}{% translate 'Not filled' %}{% endif %}">
-      <span>{{ day.date|date:"D" }}</span>
-      <span class="font-semibold">{{ day.date|date:"j" }}{% if day.filled %} ✓{% endif %}</span>
-    </a>
-  {% endfor %}
+  <div class="mt-3 flex gap-1" aria-label="{% translate 'Last 7 days' %}">
+    {% for day in recent %}
+      <a href="{{ day.url }}" class="day-pill {% if day.filled %}day-pill-filled{% endif %} {% if day.current %}day-pill-current{% endif %}"
+         title="{% if day.filled %}{% translate 'Filled' %}{% else %}{% translate 'Not filled' %}{% endif %}">
+        <span>{{ day.date|date:"D" }}</span>
+        <span class="font-semibold">{{ day.date|date:"j" }}{% if day.filled %} ✓{% endif %}</span>
+      </a>
+    {% endfor %}
+  </div>
 </div>
 
 {% if streak_badges %}
-  <ul class="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="{% translate 'Streaks' %}">
+  <ul class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="{% translate 'Streaks' %}">
     {% for badge in streak_badges %}
-      <li class="flex items-center justify-between gap-2 rounded-lg border border-gold bg-gold/15 px-3 py-2 text-sm">
-        <span class="font-medium">{{ badge.field.label }}</span>
-        <span class="whitespace-nowrap">
-          <span title="{% translate 'Current streak' %}">🔥 <strong>{{ badge.streaks.current }}</strong></span>
-          <span class="ml-2 text-ink/70" title="{% translate 'On-time current streak' %}">⏱ {{ badge.streaks.on_time_current }}</span>
-        </span>
+      <li class="streak-tile">
+        <span class="text-2xl" aria-hidden="true">🔥</span>
+        <div class="min-w-0">
+          <strong class="streak-number block" title="{% translate 'Current streak' %}">{{ badge.streaks.current }}</strong>
+          <p class="truncate !text-xs font-medium !text-ink">{{ badge.field.label }}</p>
+          <p title="{% translate 'On-time current streak' %}">⏱ {{ badge.streaks.on_time_current }}</p>
+        </div>
       </li>
     {% endfor %}
   </ul>
 {% endif %}
 
 {% if blocked %}
-  <p class="mb-4 rounded-lg border border-gold bg-gold/15 px-4 py-3 text-sm" role="status">{{ blocked }}</p>
+  <p class="mb-4 rounded-xl border border-gold/50 bg-gold/15 px-4 py-3 text-sm" role="status">{{ blocked }}</p>
   {% if entry %}
     <dl class="card divide-y divide-cream-dark">
       {% for row in saved_values %}
@@ -64,20 +70,20 @@
     </dl>
   {% endif %}
 {% else %}
-  <form method="post" action="{{ page_url }}" class="card space-y-5" novalidate>
+  <form method="post" action="{{ page_url }}" class="card stat-card space-y-3" novalidate>
     {% csrf_token %}
     {% for error in form.non_field_errors %}
       <p class="rounded-lg bg-maroon/10 px-3 py-2 text-sm text-maroon" role="alert">{{ error }}</p>
     {% endfor %}
     {% for field in form %}
       {% with kind=field.field.sadhana_field.field_type %}
-      <div>
+      <div class="entry-field">
         {% if kind == "boolean" %}
           <label for="{{ field.id_for_label }}" class="flex min-h-[48px] items-center gap-3 text-base font-medium">
             {{ field }} {{ field.label }}
           </label>
         {% else %}
-          <label for="{{ field.id_for_label }}" class="mb-1 block text-sm font-medium">
+          <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-semibold">
             {{ field.label }}{% if field.field.sadhana_field.unit %} <span class="font-normal text-ink/60">({{ field.field.sadhana_field.unit }})</span>{% endif %}
           </label>
           {% if kind == "minutes" %}
@@ -114,7 +120,7 @@
   {% endif %}
 {% endif %}
 
-<div class="mt-5">
+<div class="card mt-5">
   <label for="entry-date" class="mb-1 block text-sm font-medium">{% translate "Go to another date" %}</label>
   <input id="entry-date" type="date" class="input" value="{{ date|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}"
          data-entry-date="{% url 'entry' '0000-00-00' %}{{ user_query }}">

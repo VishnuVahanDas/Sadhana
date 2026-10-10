@@ -2,7 +2,7 @@
 {% load i18n %}
 {% block title %}{% translate "Devotees" %} · {{ site_title }}{% endblock %}
 {% block content %}
-<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Devotees" %} <span class="text-base font-normal text-ink/60">({{ people|length }})</span></h1>
+<h1 class="section-title mb-3 !text-2xl">{% translate "Devotees" %} <span class="text-base font-normal text-ink/60">({{ people|length }})</span></h1>
 <form method="get" class="card mb-4 grid grid-cols-2 gap-3">
   <div class="col-span-2">
     <label for="q" class="mb-1 block text-sm font-medium">{% translate "Search by name" %}</label>
@@ -30,8 +30,9 @@
 <ul class="space-y-2">
   {% for person in people %}
     <li>
-      <a href="{% url 'dashboard' person.pk %}" class="card flex min-h-[56px] items-center justify-between gap-3 {% if not person.is_participating %}opacity-70{% endif %}">
-        <span>
+      <a href="{% url 'dashboard' person.pk %}" class="card flex min-h-[56px] items-center gap-3 !py-3 {% if not person.is_participating %}opacity-70{% endif %}">
+        <span class="avatar avatar-sm" aria-hidden="true">{{ person.display_name|first|upper }}</span>
+        <span class="min-w-0 flex-1">
           <span class="font-serif text-lg font-bold">{{ person.display_name }}</span>
           {% if not person.is_participating %}<span class="badge ml-1 bg-cream-dark">{% translate "Inactive" %}</span>{% endif %}
           <span class="block text-sm text-ink/70">{% translate "Coordinator" %}: {% if person.coordinator %}{{ person.coordinator.display_name }}{% else %}—{% endif %}</span>

@@ -2,11 +2,18 @@
 {% load i18n %}
 {% block title %}{% translate "Analysis" %} · {{ site_title }}{% endblock %}
 {% block content %}
-<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Analysis" %}</h1>
+<h1 class="section-title mb-3 !text-2xl">{% translate "Analysis" %}</h1>
 
 <form method="get" class="card mb-3 grid grid-cols-2 gap-3">
   {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
-  <div class="col-span-2">
+  {# Field chips: the hidden input keeps the current field when another filter submits the form. #}
+  {% if field %}<input type="hidden" name="field" value="{{ field.key }}">{% endif %}
+  <div class="chip-row col-span-2" role="group" aria-label="{% translate 'Field' %}">
+    {% for option in fields %}
+      <button type="submit" name="field" value="{{ option.key }}" class="tab {% if option == field %}tab-active{% endif %}" {% if option == field %}aria-current="true"{% endif %}>{{ option.label }}</button>
+    {% endfor %}
+  </div>
+  <div>
     <label for="days" class="mb-1 block text-sm font-medium">{% translate "Days" %}</label>
     <select id="days" name="days" class="input" data-autosubmit>
       {% for key, label in day_filters %}
@@ -23,30 +30,22 @@
       {% endfor %}
     </select>
   </div>
-  <div>
-    <label for="field" class="mb-1 block text-sm font-medium">{% translate "Field" %}</label>
-    <select id="field" name="field" class="input" data-autosubmit>
-      {% for option in fields %}
-        <option value="{{ option.key }}" {% if option == field %}selected{% endif %}>{{ option.label }}</option>
-      {% endfor %}
-    </select>
-  </div>
 </form>
-{% include "partials/period_picker.html" %}
+{% include "partials/period_chips.html" %}
 
 {% if field %}
 <section aria-label="{% translate 'Summary' %}" class="mb-6 grid grid-cols-3 gap-2 text-center">
-  <div class="card !p-3">
-    <p class="text-xl font-semibold">{{ summary.total }}</p>
-    <p class="text-xs text-ink/70">{% translate "Total" %}{% if field.unit %} ({{ field.unit }}){% endif %}</p>
+  <div class="card stat-card !px-2 !py-3">
+    <p class="stat-number !text-2xl">{{ summary.total }}</p>
+    <p class="mt-1 text-xs text-ink/70">{% translate "Total" %}{% if field.unit %} ({{ field.unit }}){% endif %}</p>
   </div>
-  <div class="card !p-3">
-    <p class="text-xl font-semibold">{{ summary.average_per_person }}</p>
-    <p class="text-xs text-ink/70">{% translate "Average per person" %}</p>
+  <div class="card stat-card !px-2 !py-3">
+    <p class="stat-number !text-2xl">{{ summary.average_per_person }}</p>
+    <p class="mt-1 text-xs text-ink/70">{% translate "Average per person" %}</p>
   </div>
-  <div class="card !p-3">
-    <p class="text-xl font-semibold">{{ summary.average_per_person_per_day }}</p>
-    <p class="text-xs text-ink/70">{% translate "Per person per day" %}</p>
+  <div class="card stat-card !px-2 !py-3">
+    <p class="stat-number !text-2xl">{{ summary.average_per_person_per_day }}</p>
+    <p class="mt-1 text-xs text-ink/70">{% translate "Per person per day" %}</p>
   </div>
   <p class="col-span-3 text-xs text-ink/70">
     {% blocktranslate count people=summary.people %}{{ people }} active devotee{% plural %}{{ people }} active devotees{% endblocktranslate %}
@@ -55,10 +54,10 @@
 
 {% if festival_summaries %}
 <section aria-label="{% translate 'Festivals' %}" class="mb-6">
-  <h2 class="mb-2 text-lg font-bold text-maroon">{% translate "Festivals in this period" %}</h2>
+  <h2 class="section-title mb-2">{% translate "Festivals in this period" %}</h2>
   <ul class="space-y-2">
     {% for item in festival_summaries %}
-      <li class="rounded-lg border border-gold bg-gold/15 px-4 py-3 text-sm">
+      <li class="rounded-xl border border-gold/50 bg-gold/15 px-4 py-3 text-sm">
         <strong>{{ item.festival.name }}</strong>
         <span class="text-ink/70">({{ item.festival.start_date|date:"j M" }}{% if item.festival.end_date != item.festival.start_date %} – {{ item.festival.end_date|date:"j M" }}{% endif %})</span>
         — {{ field.label }}: <strong>{{ item.total }}</strong>{% if field.unit %} {{ field.unit }}{% endif %}
@@ -70,14 +69,14 @@
 {% endif %}
 
 <section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
-  <h2 class="text-lg font-bold text-maroon">{% translate "Community trend" %}</h2>
+  <h2 class="section-title">{% translate "Community trend" %}</h2>
   {% include "partials/charts.html" %}
   <p class="text-xs text-ink/60">{% translate "Bars are each day; the line is the 7-day average. Gold bands are festival days. The trend always shows every day, whatever the Days filter says." %}</p>
 </section>
 
 <section aria-label="{% translate 'Devotees' %}" class="mb-6">
   <div class="mb-2 flex items-center justify-between gap-2">
-    <h2 class="text-lg font-bold text-maroon">{% translate "By devotee" %}</h2>
+    <h2 class="section-title">{% translate "By devotee" %}</h2>
     {% url 'analysis_export' as export_url %}{% include "partials/export_link.html" with url=export_url %}
   </div>
   <div class="card overflow-x-auto !p-0">
@@ -100,7 +99,10 @@
           <tr {% if row.user == user %}class="bg-gold/15"{% endif %}>
             <td class="whitespace-nowrap px-3 py-2 font-medium"><a class="inline-flex min-h-[44px] items-center underline" href="{% url 'dashboard' row.user.pk %}">{{ row.user.display_name }}</a></td>
             <td class="whitespace-nowrap px-3 py-2">{% if row.user.coordinator %}{{ row.user.coordinator.display_name }}{% else %}—{% endif %}</td>
-            <td class="px-3 py-2">{{ row.stats.total }}</td>
+            <td class="px-3 py-2">
+              <span class="font-semibold tabular-nums">{{ row.stats.total }}</span>
+              <span class="meter mt-1 w-20" aria-hidden="true"><span style="width: {% widthratio row.stats.total rows.0.stats.total 100 %}%"></span></span>
+            </td>
             <td class="px-3 py-2">{{ row.stats.daily_average }}</td>
             <td class="px-3 py-2">{{ row.stats.days_filled }}</td>
             {% if field.has_streak %}
@@ -119,12 +121,12 @@
 {% endif %}
 
 <section aria-label="{% translate 'Not filled today' %}">
-  <h2 class="mb-2 text-lg font-bold text-maroon">{% translate "Not filled today" %} <span class="text-sm font-normal text-ink/60">({{ not_filled|length }})</span></h2>
+  <h2 class="section-title mb-2">{% translate "Not filled today" %} <span class="text-sm font-normal text-ink/60">({{ not_filled|length }})</span></h2>
   <div class="card">
     {% if not_filled %}
       <ul class="flex flex-wrap gap-2">
         {% for person in not_filled %}
-          <li><a href="{% url 'dashboard' person.pk %}" class="badge min-h-[32px] bg-cream-dark px-3 text-sm">{{ person.display_name }}</a></li>
+          <li><a href="{% url 'dashboard' person.pk %}" class="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-cream py-1 pl-1 pr-3 text-sm font-medium"><span class="avatar avatar-xs" aria-hidden="true">{{ person.display_name|first|upper }}</span>{{ person.display_name }}</a></li>
         {% endfor %}
       </ul>
     {% else %}
