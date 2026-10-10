@@ -3,7 +3,7 @@
 Project brief for Claude Code. The full, authoritative specification is in **`docs/SPEC.md`** — read it before writing code, and follow it. If something in the spec seems wrong or ambiguous, ask instead of guessing.
 
 ## What this is
-A private, mobile-first Django web app for ISKCON Gorakhpur where ~20–25 devotees log daily sadhana (hearing, reading, seva, rounds, notes + configurable fields) and view reports, streaks and rank tables. Domain: `sadhna.iskcongorakhpur.com`.
+A private, mobile-first Django web app for ISKCON Gorakhpur where ~20–25 devotees log daily sadhana (hearing, reading, seva, rounds, notes + configurable fields) and view reports, streaks and rank tables. Domain: `sr.iskcongorakhpur.com`.
 
 ## Non-negotiables
 - **Stack:** Python 3.12, Django 5.x, PostgreSQL (psycopg 3), server-rendered templates, Tailwind (standalone CLI), HTMX, Chart.js, openpyxl. No SPA, no React.

@@ -1,4 +1,4 @@
-# Deploying Sadhana Report to sadhna.iskcongorakhpur.com
+# Deploying Sadhana Report to sr.iskcongorakhpur.com
 
 This server also runs the live **iskcongorakhpur.com** site and its payment
 gateway. Every step below only **adds** new files. Nothing here edits another
@@ -15,13 +15,13 @@ The layout follows what the other sites on this server already use: code under
 | Database | `sadhna_db` (PostgreSQL 16) |
 | Socket | `/run/sadhna/gunicorn.sock` |
 | systemd unit | `/etc/systemd/system/sadhna.service` |
-| Nginx site | `/etc/nginx/sites-available/sadhna.iskcongorakhpur.com` |
+| Nginx site | `/etc/nginx/sites-available/sr.iskcongorakhpur.com` |
 | Backups | `/home/vishnuvahan/backups/sadhna/` |
 
 ## 0. Before you start
 
 1. **DNS:** add an `A` record `sadhna` → `88.222.241.219` and wait until
-   `dig +short sadhna.iskcongorakhpur.com` prints that address. Certbot fails without it.
+   `dig +short sr.iskcongorakhpur.com` prints that address. Certbot fails without it.
 2. **Remove the demo users** if they should not be on the live site:
    `.venv/bin/python manage.py seed_demo --delete`
 3. Note that the main site works right now (home page and donation page), so you can compare afterwards.
@@ -32,8 +32,8 @@ Edit `/home/vishnuvahan/sadhana/.env`:
 
 ```
 DEBUG=False
-ALLOWED_HOSTS=sadhna.iskcongorakhpur.com
-CSRF_TRUSTED_ORIGINS=https://sadhna.iskcongorakhpur.com
+ALLOWED_HOSTS=sr.iskcongorakhpur.com
+CSRF_TRUSTED_ORIGINS=https://sr.iskcongorakhpur.com
 ```
 
 Keep `SECRET_KEY` and `DATABASE_URL` as they are. With `DEBUG=False` the app
@@ -68,7 +68,7 @@ sudo cp deploy/sadhna.service /etc/systemd/system/sadhna.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now sadhna
 systemctl status sadhna --no-pager
-curl --unix-socket /run/sadhna/gunicorn.sock -H "Host: sadhna.iskcongorakhpur.com" -H "X-Forwarded-Proto: https" -sI http://localhost/login/ | head -n 1
+curl --unix-socket /run/sadhna/gunicorn.sock -H "Host: sr.iskcongorakhpur.com" -H "X-Forwarded-Proto: https" -sI http://localhost/login/ | head -n 1
 ```
 
 The last command should print `HTTP/1.1 200 OK`.
@@ -76,19 +76,19 @@ The last command should print `HTTP/1.1 200 OK`.
 ## 5. Nginx (new site file)
 
 ```bash
-sudo cp deploy/nginx-sadhna.conf /etc/nginx/sites-available/sadhna.iskcongorakhpur.com
-sudo ln -s /etc/nginx/sites-available/sadhna.iskcongorakhpur.com /etc/nginx/sites-enabled/
+sudo cp deploy/nginx-sadhna.conf /etc/nginx/sites-available/sr.iskcongorakhpur.com
+sudo ln -s /etc/nginx/sites-available/sr.iskcongorakhpur.com /etc/nginx/sites-enabled/
 sudo nginx -t          # must say "syntax is ok" and "test is successful"
 sudo systemctl reload nginx
 ```
 
 If `nginx -t` fails, **do not reload**. Remove the symlink
-(`sudo rm /etc/nginx/sites-enabled/sadhna.iskcongorakhpur.com`) and run `sudo nginx -t` again.
+(`sudo rm /etc/nginx/sites-enabled/sr.iskcongorakhpur.com`) and run `sudo nginx -t` again.
 
 ## 6. HTTPS certificate
 
 ```bash
-sudo certbot --nginx -d sadhna.iskcongorakhpur.com
+sudo certbot --nginx -d sr.iskcongorakhpur.com
 sudo nginx -t
 ```
 
@@ -107,7 +107,7 @@ To restore: `gunzip -c <file>.sql.gz | psql "<DATABASE_URL>"` into an empty data
 ## 8. Smoke test
 
 1. https://iskcongorakhpur.com loads, and its donation/payment page still works.
-2. https://sadhna.iskcongorakhpur.com shows the login page with a valid certificate.
+2. https://sr.iskcongorakhpur.com shows the login page with a valid certificate.
 3. Log in, save an entry, open My Report, Analysis and Ranks, download one Excel file.
 4. `journalctl -u sadhna -n 50 --no-pager` shows no errors.
 
@@ -128,7 +128,7 @@ sudo systemctl restart sadhna
 This removes the new site and leaves everything else as it was:
 
 ```bash
-sudo rm /etc/nginx/sites-enabled/sadhna.iskcongorakhpur.com
+sudo rm /etc/nginx/sites-enabled/sr.iskcongorakhpur.com
 sudo nginx -t && sudo systemctl reload nginx
 sudo systemctl disable --now sadhna
 ```

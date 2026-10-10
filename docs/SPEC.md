@@ -353,7 +353,7 @@ Navigation (mobile bottom bar): **Today · My Report · Ranks · Analysis · Mor
 ## 11. Security
 
 - `DEBUG=False` in production; secrets in `.env`.
-- `ALLOWED_HOSTS = ["sadhna.iskcongorakhpur.com"]`, `CSRF_TRUSTED_ORIGINS` set.
+- `ALLOWED_HOSTS = ["sr.iskcongorakhpur.com"]`, `CSRF_TRUSTED_ORIGINS` set.
 - `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_PROXY_SSL_HEADER`, HSTS.
 - Login rate limiting (e.g. `django-axes` or simple cache-based throttle: 5 failures / 15 min).
 - Long session (e.g. 30 days, "remember me" by default) — devotees fill daily from phones.
@@ -411,8 +411,8 @@ sadhna/
 4. **Env:** `/var/www/sadhna/.env` (chmod 600).
 5. **Build:** `pip install -r requirements.txt`, Tailwind build, `migrate`, `collectstatic`, create first superuser (`createsuperuser` by email).
 6. **gunicorn:** `deploy/sadhna.service` → `/etc/systemd/system/sadhna.service`, unix socket `/run/sadhna/gunicorn.sock`, 2–3 workers.
-7. **Nginx:** new file `deploy/nginx-sadhna.conf` → `/etc/nginx/sites-available/sadhna.iskcongorakhpur.com` + symlink. Serves `/static/` directly. Run `sudo nginx -t` **before** reload.
-8. **TLS:** `sudo certbot --nginx -d sadhna.iskcongorakhpur.com` (only this domain).
+7. **Nginx:** new file `deploy/nginx-sadhna.conf` → `/etc/nginx/sites-available/sr.iskcongorakhpur.com` + symlink. Serves `/static/` directly. Run `sudo nginx -t` **before** reload.
+8. **TLS:** `sudo certbot --nginx -d sr.iskcongorakhpur.com` (only this domain).
 9. **Backups:** `deploy/backup.sh` — nightly `pg_dump` of `sadhna_db` via cron, keep 14 days.
 10. **Smoke test:** main site still loads and payments page still works; then the new subdomain.
 
@@ -427,7 +427,7 @@ sadhna/
 | 3 | Manage pages: users, per-user fields, fields, settings, audit viewer | Superuser can run the system without `/admin/` |
 | 4 | Services (periods, streaks, analytics) with tests; individual dashboard with cards, chart, heatmap | Personal report complete |
 | 5 | Group/All analysis, rank table, Excel exports | All views complete |
-| 6 | Polish, security settings, full test pass, deploy files, deployment | Live on sadhna.iskcongorakhpur.com |
+| 6 | Polish, security settings, full test pass, deploy files, deployment | Live on sr.iskcongorakhpur.com |
 
 ---
 

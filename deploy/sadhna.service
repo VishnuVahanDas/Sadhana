@@ -1,4 +1,4 @@
-# Sadhana Report (sadhna.iskcongorakhpur.com) — gunicorn.
+# Sadhana Report (sr.iskcongorakhpur.com) — gunicorn.
 # Install as /etc/systemd/system/sadhna.service. A new, separate unit: it does
 # not touch iskcongkp.service or any other site.
 [Unit]

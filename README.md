@@ -1,6 +1,6 @@
 # Sadhana Report
 
-Private sadhana log for ISKCON Gorakhpur (`sadhna.iskcongorakhpur.com`). The specification is in `docs/SPEC.md`.
+Private sadhana log for ISKCON Gorakhpur (`sr.iskcongorakhpur.com`). The specification is in `docs/SPEC.md`.
 
 ## Setup
 
