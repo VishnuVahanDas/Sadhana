@@ -78,3 +78,22 @@ def from_request(params, today):
             return None
 
     return resolve(params.get("period", DEFAULT), today, parse("start"), parse("end"))
+
+
+def previous(period):
+    """The period just before this one, to compare it with.
+
+    Rolling periods and custom ranges go back by their own length. "This week"
+    and "This month" compare like with like: the same days of last week or last
+    month (1–10 October against 1–10 September), not the whole of it.
+    """
+    if period.key in ("this_week", "last_week"):
+        return Period(CUSTOM, period.start - timedelta(days=7), period.end - timedelta(days=7))
+    if period.key in ("this_month", "last_month"):
+        last_of_previous = period.start.replace(day=1) - timedelta(days=1)
+        start = last_of_previous.replace(day=1)
+        if period.key == "last_month":
+            return Period(CUSTOM, start, last_of_previous)
+        # Month to date; a 31st is held back to the last day of a shorter month.
+        return Period(CUSTOM, start, start.replace(day=min(period.end.day, last_of_previous.day)))
+    return Period(CUSTOM, period.start - timedelta(days=period.days), period.start - timedelta(days=1))

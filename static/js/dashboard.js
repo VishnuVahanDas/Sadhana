@@ -68,19 +68,20 @@
           datasets: [
             {
               type: "line",
-              label: words.average,
-              data: chart.average,
+              // A comparison chart draws the previous period here; a trend chart draws the 7-day average.
+              label: chart.previous ? words.previous : words.average,
+              data: chart.previous || chart.average,
               borderColor: themed("--c-maroon", 1),
               backgroundColor: themed("--c-maroon", 1),
               borderWidth: 2,
-              pointRadius: 0,
+              pointRadius: chart.previous && chart.labels.length <= 15 ? 3 : 0,
               pointHoverRadius: 4,
-              tension: 0.25,
+              tension: chart.previous ? 0 : 0.25,
               order: 0,
             },
             {
               type: "bar",
-              label: words.daily,
+              label: chart.previous ? words.current : words.daily,
               data: chart.values,
               backgroundColor: themed("--c-saffron", 0.85),
               hoverBackgroundColor: themed("--c-saffron-dark", 1),
@@ -100,7 +101,12 @@
               callbacks: {
                 // Always the real value, even when the bar is clipped.
                 label: function (item) {
-                  return item.dataset.label + ": " + item.formattedValue + (chart.unit ? " " + chart.unit : "");
+                  var name = item.dataset.label;
+                  // The previous period's point belongs to another date: say which.
+                  if (chart.previous && item.dataset.type === "line" && chart.previous_labels[item.dataIndex]) {
+                    name += " (" + chart.previous_labels[item.dataIndex] + ")";
+                  }
+                  return name + ": " + item.formattedValue + (chart.unit ? " " + chart.unit : "");
                 },
                 afterTitle: function (items) {
                   return chart.festivals[items[0].dataIndex] || "";

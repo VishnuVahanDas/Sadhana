@@ -6,6 +6,7 @@
 
 <form method="get" class="card mb-3 grid grid-cols-2 gap-3">
   {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+  {% if compare %}<input type="hidden" name="compare" value="1">{% endif %}
   {# Field chips: the hidden input keeps the current field when another filter submits the form. #}
   {% if field %}<input type="hidden" name="field" value="{{ field.key }}">{% endif %}
   <div class="chip-row col-span-2" role="group" aria-label="{% translate 'Field' %}">
@@ -32,6 +33,7 @@
   </div>
 </form>
 {% include "partials/period_chips.html" %}
+{% include "partials/compare_toggle.html" %}
 
 {% if field %}
 <section aria-label="{% translate 'Summary' %}" class="mb-6 grid grid-cols-3 gap-2 text-center">
@@ -51,6 +53,36 @@
     {% blocktranslate count people=summary.people %}{{ people }} active devotee{% plural %}{{ people }} active devotees{% endblocktranslate %}
   </p>
 </section>
+
+{% if compare %}
+<section aria-label="{% translate 'Comparison' %}" class="mb-6 space-y-3">
+  <h2 class="section-title">{% translate "Compared with the previous period" %}</h2>
+  <div class="card overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="text-xs uppercase tracking-wide text-ink/60">
+        <tr>
+          <th class="py-1 pr-3 font-medium"><span class="sr-only">{% translate "Measure" %}</span></th>
+          <th class="py-1 pr-3 font-medium">{% translate "This period" %}</th>
+          <th class="py-1 pr-3 font-medium">{% translate "Previous" %}</th>
+          <th class="py-1 font-medium">{% translate "Change" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-cream-dark">
+        {% for metric in compare.summary %}
+          <tr>
+            <th scope="row" class="py-2 pr-3 font-medium">{{ metric.label }}</th>
+            <td class="py-2 pr-3 font-semibold tabular-nums">{{ metric.change.current }}</td>
+            <td class="py-2 pr-3 tabular-nums text-ink/70">{{ metric.change.previous }}</td>
+            <td class="py-2">{% include "partials/change.html" with change=metric.change %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/chart_card.html" with chart=compare.chart %}
+  <p class="text-xs text-ink/60">{% translate "Bars are this period; the line is the previous period, lined up day by day. The devotee table below shows each person's change in daily average." %}</p>
+</section>
+{% endif %}
 
 {% if festival_summaries %}
 <section aria-label="{% translate 'Festivals' %}" class="mb-6">
@@ -88,6 +120,10 @@
           <th class="sort-header" data-sort="number" aria-sort="descending">{% translate "Total" %}</th>
           <th class="sort-header" data-sort="number">{% translate "Daily avg" %}</th>
           <th class="sort-header" data-sort="number">{% translate "Days filled" %}</th>
+          {% if compare %}
+            <th class="sort-header" data-sort="number">{% translate "Previous avg" %}</th>
+            <th class="sort-header" data-sort="number">{% translate "Change" %}</th>
+          {% endif %}
           {% if field.has_streak %}
             <th class="sort-header" data-sort="number">🔥 {% translate "Streak" %}</th>
             <th class="sort-header" data-sort="number">⏱ {% translate "On-time" %}</th>
@@ -95,7 +131,7 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-cream-dark">
-        {% for row in rows %}
+        {% for row, change in table %}
           <tr {% if row.user == user %}class="bg-gold/15"{% endif %}>
             <td class="whitespace-nowrap px-3 py-2 font-medium"><a class="inline-flex min-h-[44px] items-center underline" href="{% url 'dashboard' row.user.pk %}">{{ row.user.display_name }}</a></td>
             <td class="whitespace-nowrap px-3 py-2">{% if row.user.coordinator %}{{ row.user.coordinator.display_name }}{% else %}—{% endif %}</td>
@@ -105,13 +141,18 @@
             </td>
             <td class="px-3 py-2">{{ row.stats.daily_average }}</td>
             <td class="px-3 py-2">{{ row.stats.days_filled }}</td>
+            {% if compare %}
+              <td class="px-3 py-2 tabular-nums">{% if change.previous is None %}—{% else %}{{ change.previous }}{% endif %}</td>
+              {# data-value lets the column sort by the signed change: improvers first, then fallers. #}
+              <td class="px-3 py-2" data-value="{% if change.difference is None %}-999999{% else %}{{ change.difference }}{% endif %}">{% include "partials/change.html" %}</td>
+            {% endif %}
             {% if field.has_streak %}
               <td class="px-3 py-2">{{ row.streaks.current }}</td>
               <td class="px-3 py-2">{{ row.streaks.on_time_current }}</td>
             {% endif %}
           </tr>
         {% empty %}
-          <tr><td colspan="7" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
+          <tr><td colspan="9" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -134,4 +175,5 @@
     {% endif %}
   </div>
 </section>
+{% include "partials/chart_scripts.html" %}
 {% endblock %}

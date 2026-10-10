@@ -1,0 +1,19 @@
+{% load i18n %}
+<div class="card">
+  <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h3 class="font-sans text-sm font-semibold">{{ chart.title }}{% if chart.unit %} <span class="font-normal text-ink/60">({{ chart.unit }})</span>{% endif %}</h3>
+    {% if chart.cap %}
+      <div class="flex gap-1" role="group" aria-label="{% translate 'Chart range' %}">
+        <button type="button" class="range-toggle range-toggle-active" data-range="usual" data-range-for="{{ chart.id }}" aria-pressed="true">{% translate "Usual range" %}</button>
+        <button type="button" class="range-toggle" data-range="full" data-range-for="{{ chart.id }}" aria-pressed="false">{% translate "Full range" %}</button>
+      </div>
+    {% endif %}
+  </div>
+  <div class="relative h-48"><canvas data-chart="{{ chart.id }}" role="img" aria-label="{{ chart.title }}"></canvas></div>
+  {% if chart.clipped %}
+    <p class="mt-2 text-xs text-ink/70">
+      ▲ {% translate "Above the usual range:" %}
+      {% for day in chart.clipped %}{{ day.label }} <strong>{{ day.value }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+  {% endif %}
+</div>

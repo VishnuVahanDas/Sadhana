@@ -1,0 +1,22 @@
+{% load i18n %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+  <a href="{{ compare_url }}" class="tab {% if compare %}tab-active{% endif %}" role="switch" aria-checked="{% if compare %}true{% else %}false{% endif %}">
+    {% if compare %}✓ {% endif %}{% translate "Compare with previous period" %}
+  </a>
+  {% if compare %}
+    <span class="text-xs text-ink/70">
+      {{ period.start|date:"j M" }} – {{ period.end|date:"j M Y" }}
+      {% translate "against" %}
+      <strong>{{ compare.previous.start|date:"j M" }} – {{ compare.previous.end|date:"j M Y" }}</strong>
+    </span>
+  {% endif %}
+</div>
+{% if compare.festival_note %}
+  <p class="mb-4 rounded-xl border border-gold/50 bg-gold/15 px-4 py-3 text-sm">
+    {% if compare.festival_note.in_current %}
+      {% blocktranslate with names=compare.festival_note.names %}This period includes festival days ({{ names }}); the previous one does not. That may explain much of the difference.{% endblocktranslate %}
+    {% else %}
+      {% blocktranslate with names=compare.festival_note.names %}The previous period included festival days ({{ names }}); this one does not. That may explain much of the difference.{% endblocktranslate %}
+    {% endif %}
+  </p>
+{% endif %}

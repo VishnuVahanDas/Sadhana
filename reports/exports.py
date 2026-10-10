@@ -9,10 +9,7 @@ HEADER_FILL = PatternFill("solid", fgColor="7A1F2B")
 HEADER_FONT = Font(bold=True, color="FFFFFF")
 
 
-def workbook_response(filename, sheet_title, intro, headers, rows):
-    """An .xlsx download: a few intro lines, then a styled header row and the data."""
-    workbook = Workbook()
-    sheet = workbook.active
+def _fill_sheet(sheet, sheet_title, intro, headers, rows):
     sheet.title = sheet_title[:31]
     for line in intro:
         sheet.append([str(line)])
@@ -29,6 +26,17 @@ def workbook_response(filename, sheet_title, intro, headers, rows):
     for index, header in enumerate(headers, 1):
         longest = max([len(str(header))] + [len(str(row[index - 1] or "")) for row in rows])
         sheet.column_dimensions[get_column_letter(index)].width = min(max(longest + 2, 10), 50)
+
+
+def workbook_response(filename, sheet_title, intro, headers, rows, extra_sheets=()):
+    """An .xlsx download: a few intro lines, then a styled header row and the data.
+
+    `extra_sheets` adds more sheets, each as (sheet_title, intro, headers, rows).
+    """
+    workbook = Workbook()
+    _fill_sheet(workbook.active, sheet_title, intro, headers, rows)
+    for extra in extra_sheets:
+        _fill_sheet(workbook.create_sheet(), *extra)
 
     response = HttpResponse(content_type=XLSX)
     response["Content-Disposition"] = f'attachment; filename="{slugify(filename)}.xlsx"'

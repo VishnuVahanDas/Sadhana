@@ -1,0 +1,6 @@
+{% load i18n %}{% comment %}One Change in words and symbols, never by colour alone.{% endcomment %}
+{% if change.direction is None %}<span class="text-ink/50" title="{% translate 'Nothing to compare with' %}">—</span>
+{% elif change.direction == "same" %}<span class="change">= {% translate "same" %}</span>
+{% elif change.direction == "up" %}<span class="change"><span aria-hidden="true">▲</span> {{ change.amount }} {% translate "more" %}{% if change.percent is not None %} <span class="text-ink/60">(+{{ change.percent }}%)</span>{% endif %}</span>
+{% else %}<span class="change"><span aria-hidden="true">▼</span> {{ change.amount }} {% translate "less" %}{% if change.percent is not None %} <span class="text-ink/60">({{ change.percent }}%)</span>{% endif %}</span>
+{% endif %}

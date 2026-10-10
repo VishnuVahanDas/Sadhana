@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from sadhana.models import Festival, SadhanaEntry, SadhanaField
-from sadhana.services import analytics, dates, festivals, periods, ranking
+from sadhana.services import analytics, comparison, dates, festivals, periods, ranking
 from sadhana.services.fields import effective_fields
 
 from .exports import workbook_response
@@ -76,6 +76,54 @@ def _chart(title, unit, period, values, lead_in, festival_days, steps, floor):
     }
 
 
+def _compare_chart(title, unit, period, previous_period, values, previous_values, festival_days, steps, floor):
+    """Two periods overlaid day by day: this period as bars, the previous one as a line."""
+    chart = _chart(title, unit, period, values, (), festival_days, steps, floor)
+    earlier = comparison.align(previous_values, len(values))
+    # One cap for both, so the two periods are read against the same axis.
+    cap = scaling.usual_cap(values + [value for value in earlier if value], steps, floor)
+    previous_dates = previous_period.dates()
+    chart.update(
+        cap=cap,
+        clipped=[{"index": index, "label": chart["labels"][index], "value": value} for index, value in scaling.clipped(values, cap)],
+        previous=earlier,
+        previous_labels=comparison.align([date.strftime("%-d %b") for date in previous_dates], len(values)),
+    )
+    del chart["average"]
+    return chart
+
+
+def _number_charts(*groups):
+    """Give every chart on the page its position in the one JSON list the chart script reads."""
+    everything = [chart for group in groups for chart in group]
+    for index, chart in enumerate(everything):
+        chart["id"] = index
+    return everything
+
+
+def _comparing(request):
+    return request.GET.get("compare") == "1"
+
+
+def _compare_url(request):
+    """The current page with the comparison switched the other way."""
+    query = request.GET.copy()
+    if _comparing(request):
+        query.pop("compare", None)
+    else:
+        query["compare"] = "1"
+    return f"{request.path}?{query.urlencode()}" if query else request.path
+
+
+def _festival_note(period, previous_period, festival_days, previous_festival_days):
+    """Festival names when only one of the two periods has festival days — usually why the numbers differ."""
+    if bool(festival_days) == bool(previous_festival_days):
+        return None
+    days = festival_days or previous_festival_days
+    names = sorted({name for names in days.values() for name in names})
+    return {"names": ", ".join(names), "in_current": bool(festival_days)}
+
+
 def _lead_in(period):
     """The six days before a period, so the 7-day average starts with a full window."""
     return Period(periods.CUSTOM, period.start - timedelta(days=scaling.ROLLING_WINDOW - 1), period.start - timedelta(days=1))
@@ -83,6 +131,15 @@ def _lead_in(period):
 
 def _period_line(period):
     return _("Period: %(start)s to %(end)s") % {"start": period.start.isoformat(), "end": period.end.isoformat()}
+
+
+def _previous_line(period):
+    return _("Compared with: %(start)s to %(end)s") % {"start": period.start.isoformat(), "end": period.end.isoformat()}
+
+
+def _change_cells(change):
+    """A Change as Excel cells: now, before, difference, percent (blank where there is nothing to compare)."""
+    return [change.current, change.previous, change.difference, change.percent]
 
 
 def _cell(value):
@@ -182,26 +239,64 @@ def dashboard(request, pk):
         # Colour by the usual range, not the year's biggest day; real values stay in the tooltips.
         steps, floor = _scale(heat_field)
         heat_top = scaling.usual_cap(list(analytics.heatmap_values(days, heat_field, today).values()), steps, floor)
+    festival_days = festivals.festival_dates(period.start, period.end)
+    charts = _charts(days, fields, period, festival_days)
+    compare = _dashboard_comparison(person, days, fields, period, today, festival_days) if _comparing(request) else None
+    keep = {"heat": heat_field.key} if heat_field and "heat" in request.GET else {}
+    if compare:
+        keep["compare"] = "1"
     context = {
         "person": person,
         "period": period,
         "presets": periods.PRESETS,
         "fields": fields,
         "cards": cards,
-        "charts": _charts(days, fields, period, festivals.festival_dates(period.start, period.end)),
+        "charts": charts,
+        "compare": compare,
+        "compare_url": _compare_url(request),
+        "chart_data": _number_charts(charts, [item["chart"] for item in compare["fields"] if item["chart"]] if compare else []),
         "heat_fields": rankable,
         "heat_field": heat_field,
         "heatmap": analytics.heatmap(days, heat_field, today, top=heat_top) if heat_field else [],
         "heat_top": heat_top,
         "rows": rows,
         "can_edit": request.user == person or request.user.is_superuser,
-        "keep": {"heat": heat_field.key} if heat_field and "heat" in request.GET else {},
+        "keep": keep,
     }
     return render(request, "reports/dashboard.html", context)
 
 
+def _dashboard_comparison(person, days, fields, period, today, festival_days):
+    """Each rankable field in this period against the previous one."""
+    earlier = periods.previous(period)
+    earlier_festival_days = festivals.festival_dates(earlier.start, earlier.end)
+    # Nothing to compare with if the devotee had not started yet in the earlier period.
+    had_started = analytics.average_days(earlier, person.date_joined, today, min(days, default=None)) > 0
+    items = []
+    for field in fields:
+        if not field.is_rankable:
+            continue
+        current = analytics.field_stats(days, field, period, person.date_joined, today)
+        previous = analytics.field_stats(days, field, earlier, person.date_joined, today) if had_started else None
+        chart = None
+        if field.is_numeric and had_started:
+            steps, floor = _scale(field)
+            chart = _compare_chart(
+                field.label, field.unit, period, earlier,
+                analytics.series(days, field, period), analytics.series(days, field, earlier),
+                festival_days, steps, floor,
+            )
+        items.append({"field": field, "metrics": comparison.compare_stats(current, previous), "chart": chart})
+    return {
+        "previous": earlier,
+        "had_started": had_started,
+        "fields": items,
+        "festival_note": _festival_note(period, earlier, festival_days, earlier_festival_days),
+    }
+
+
 def dashboard_export(request, pk):
-    person, _today, period, fields, _days, rows = _dashboard_data(request, pk)
+    person, today, period, fields, _days, rows = _dashboard_data(request, pk)
     headers = [_("Date")] + [field.label for field in fields] + [_("On time")]
     data = []
     for row, day in ((row, _days[row["date"]]) for row in rows):
@@ -209,12 +304,28 @@ def dashboard_export(request, pk):
         # Numbers stay numbers in Excel; everything else is written as text.
         cells = [value if isinstance(value, int) and not isinstance(value, bool) else (_cell(value) or "") for value in values]
         data.append([row["date"], *cells, _("Yes") if row["on_time"] else _("Late")])
+    extra_sheets = []
+    if _comparing(request):
+        compare = _dashboard_comparison(person, _days, fields, period, today, {})
+        extra_sheets.append(
+            (
+                _("Comparison"),
+                [person.display_name, _period_line(period), _previous_line(compare["previous"])],
+                [_("Field"), _("Measure"), _("This period"), _("Previous period"), _("Change"), _("Change %")],
+                [
+                    [item["field"].label, str(metric["label"]), *_change_cells(metric["change"])]
+                    for item in compare["fields"]
+                    for metric in item["metrics"]
+                ],
+            )
+        )
     return workbook_response(
         f"sadhana-{person.display_name}-{period.start}-to-{period.end}",
         _("Entries"),
         [person.display_name, _period_line(period)],
         headers,
         data,
+        extra_sheets,
     )
 
 
@@ -238,6 +349,45 @@ def _analysis_data(request):
     rows = analytics.user_rows(people, days_by_user, field, period, today, day_filter) if field else []
     rows.sort(key=lambda row: (-row.stats.total, row.user.display_name.lower()))
     return today, period, people, coordinator, fields, field, days_by_user, rows, days_key, festival_days, day_filter
+
+
+def _analysis_comparison(request, period, people, field, days_by_user, rows, today, days_key, festival_days, day_filter):
+    """The group, and each devotee, in this period against the previous one (same Days filter)."""
+    earlier = periods.previous(period)
+    earlier_festival_days = festivals.festival_dates(earlier.start, earlier.end)
+    earlier_filter = festivals.day_filter(days_key, earlier_festival_days)
+    earlier_rows = {
+        row.user.pk: row for row in analytics.user_rows(people, days_by_user, field, earlier, today, earlier_filter)
+    }
+    now = analytics.group_summary(rows, period, today, day_filter)
+    before = analytics.group_summary(list(earlier_rows.values()), earlier, today, earlier_filter)
+    by_user = {}
+    for row in rows:
+        user = row.user
+        # "—" rather than 0 for someone who had not started yet in the earlier period.
+        had_started = analytics.average_days(
+            earlier, user.date_joined, today, min(days_by_user[user.pk], default=None), earlier_filter
+        ) > 0
+        previous = earlier_rows[user.pk].stats.daily_average if had_started else None
+        by_user[user.pk] = comparison.Change(row.stats.daily_average, previous)
+    steps, floor = _scale(field)
+    averages = analytics.community_series(people, days_by_user, field, period)[1]
+    earlier_averages = analytics.community_series(people, days_by_user, field, earlier)[1]
+    unit = field.unit or (_("days") if field.field_type == SadhanaField.FieldType.BOOLEAN else "")
+    return {
+        "previous": earlier,
+        "summary": [
+            {"label": _("Per person per day"), "change": comparison.Change(now.average_per_person_per_day, before.average_per_person_per_day)},
+            {"label": _("Average per person"), "change": comparison.Change(now.average_per_person, before.average_per_person)},
+            {"label": _("Total"), "change": comparison.Change(now.total, before.total)},
+        ],
+        "by_user": by_user,
+        "chart": _compare_chart(
+            f"{field.label} — {_('Daily average per person')}", unit, period, earlier,
+            averages, earlier_averages, festival_days, steps, floor,
+        ),
+        "festival_note": None if days_key != festivals.ALL else _festival_note(period, earlier, festival_days, earlier_festival_days),
+    }
 
 
 def _festival_summaries(period, people, days_by_user, field):
@@ -280,7 +430,16 @@ def analysis(request):
         keep["coordinator"] = coordinator.pk
     if days_key != festivals.ALL:
         keep["days"] = days_key
+    compare = None
+    if field and _comparing(request):
+        compare = _analysis_comparison(
+            request, period, people, field, days_by_user, rows, today, days_key, festival_days, day_filter
+        )
+        keep["compare"] = "1"
     context = {
+        "compare": compare,
+        "compare_url": _compare_url(request),
+        "chart_data": _number_charts(charts, [compare["chart"]] if compare else []),
         "period": period,
         "presets": periods.PRESETS,
         "keep": keep,
@@ -294,6 +453,8 @@ def analysis(request):
         "festival_summaries": _festival_summaries(period, people, days_by_user, field) if field else [],
         "charts": charts,
         "rows": rows,
+        # (row, Change in daily average or None) so the table can show the comparison columns.
+        "table": [(row, compare["by_user"][row.user.pk] if compare else None) for row in rows],
         "not_filled": sorted((user for user in people if user.pk not in filled_today), key=lambda u: u.display_name.lower()),
         "today": today,
     }
@@ -301,24 +462,33 @@ def analysis(request):
 
 
 def analysis_export(request):
-    _today, period, _people, coordinator, _fields, field, _days, rows, days_key, *_rest = _analysis_data(request)
+    (today, period, people, coordinator, _fields, field, days_by_user, rows,
+     days_key, festival_days, day_filter) = _analysis_data(request)
+    compare = None
+    if field and _comparing(request):
+        compare = _analysis_comparison(
+            request, period, people, field, days_by_user, rows, today, days_key, festival_days, day_filter
+        )
     headers = [_("Name"), _("Coordinator"), _("Total"), _("Daily average"), _("Days filled")]
     if field and field.has_streak:
         headers += [_("Current streak"), _("On-time streak")]
+    if compare:
+        headers += [_("Previous daily average"), _("Change"), _("Change %")]
     data = []
     for row in rows:
         line = [row.user.display_name, _coordinator_name(row.user), row.stats.total, row.stats.daily_average, row.stats.days_filled]
         if row.streaks:
             line += [row.streaks.current, row.streaks.on_time_current]
+        if compare:
+            line += _change_cells(compare["by_user"][row.user.pk])[1:]
         data.append(line)
     scope = coordinator.display_name if coordinator else _("All devotees")
     label = field.label if field else ""
+    intro = [f"{label} — {scope}", _period_line(period), str(dict(festivals.DAY_FILTERS)[days_key])]
+    if compare:
+        intro.append(_previous_line(compare["previous"]))
     return workbook_response(
-        f"sadhana-analysis-{label}-{period.start}-to-{period.end}",
-        _("Analysis"),
-        [f"{label} — {scope}", _period_line(period), str(dict(festivals.DAY_FILTERS)[days_key])],
-        headers,
-        data,
+        f"sadhana-analysis-{label}-{period.start}-to-{period.end}", _("Analysis"), intro, headers, data
     )
 
 

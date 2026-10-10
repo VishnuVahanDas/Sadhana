@@ -60,8 +60,9 @@ document.addEventListener("click", function (event) {
   var ascending = current ? current === "descending" : !numeric;
   var rows = Array.prototype.slice.call(body.rows).filter(function (row) { return row.cells.length > index; });
   rows.sort(function (a, b) {
-    var x = a.cells[index].textContent.trim();
-    var y = b.cells[index].textContent.trim();
+    // A cell can carry its sort value in data-value when its text is not a plain number.
+    var x = a.cells[index].getAttribute("data-value") || a.cells[index].textContent.trim();
+    var y = b.cells[index].getAttribute("data-value") || b.cells[index].textContent.trim();
     var result = numeric ? (parseFloat(x) || 0) - (parseFloat(y) || 0) : x.localeCompare(y);
     return ascending ? result : -result;
   });

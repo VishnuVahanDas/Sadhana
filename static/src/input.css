@@ -605,3 +605,10 @@
     @apply block;
   }
 }
+
+@layer components {
+  /* Change against the previous period: arrow and words carry the meaning; weight only adds emphasis. */
+  .change {
+    @apply whitespace-nowrap text-sm font-semibold text-ink;
+  }
+}

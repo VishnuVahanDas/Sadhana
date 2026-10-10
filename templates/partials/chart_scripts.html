@@ -1,0 +1,6 @@
+{% load static i18n %}
+{# Once per page: the data for every chart on it (trend and comparison), then the chart code. #}
+{{ chart_data|json_script:"chart-data" }}
+<script id="chart-labels" type="application/json">{"daily": "{% translate 'Daily' %}", "average": "{% translate '7-day average' %}", "current": "{% translate 'This period' %}", "previous": "{% translate 'Previous period' %}"}</script>
+<script src="{% static 'js/chart.umd.min.js' %}" defer></script>
+<script src="{% static 'js/dashboard.js' %}" defer></script>
