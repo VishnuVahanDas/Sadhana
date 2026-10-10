@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .input {
+    @apply block w-full min-h-[48px] rounded-lg border border-cream-dark bg-white px-3 py-2 text-base text-ink
+      focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40;
+  }
+  .btn-primary {
+    @apply inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-saffron px-4 py-2
+      text-base font-semibold text-ink shadow-sm hover:bg-saffron-dark focus:outline-none focus:ring-2 focus:ring-saffron/50;
+  }
+  .card {
+    @apply rounded-xl border border-cream-dark bg-white p-4 shadow-sm;
+  }
+  .nav-item {
+    @apply flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs text-cream/80;
+  }
+  .nav-item-active {
+    @apply font-semibold text-gold;
+  }
+  .sheet-link {
+    @apply flex min-h-[48px] w-full items-center rounded-lg px-3 text-left text-base text-ink hover:bg-cream;
+  }
+  /* Subtle lotus/mandala motif behind the login card. */
+  .mandala {
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.22) 0, transparent 55%),
+      repeating-radial-gradient(circle at 50% 0%, rgba(232, 117, 26, 0.10) 0 2px, transparent 2px 26px);
+  }
+}

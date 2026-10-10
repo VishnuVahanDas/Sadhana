@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }} · {% translate "Sadhana Report" %}{% endblock %}
+{% block content %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{{ title }}</h1>
+<div class="card">
+  <p>{% blocktranslate with name=user.display_name %}Hare Krishna, {{ name }} 🙏{% endblocktranslate %}</p>
+  <p class="mt-2 text-sm text-ink/70">{% blocktranslate %}This page will be built in phase {{ phase }}.{% endblocktranslate %}</p>
+</div>
+{% endblock %}

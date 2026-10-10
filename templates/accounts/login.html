@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Log in" %} · {% translate "Sadhana Report" %}{% endblock %}
+{% block body %}
+<main class="mandala flex min-h-screen flex-col items-center justify-center px-4 py-8">
+  <div class="w-full max-w-sm">
+    <div class="mb-6 text-center">
+      <img src="{% static 'img/logo.png' %}" alt="{% translate 'ISKCON Gorakhpur' %}" class="mx-auto h-24 w-24">
+      <h1 class="mt-4 text-2xl font-bold text-maroon">{% translate "Hare Krishna" %} 🙏</h1>
+      <p class="mt-1 text-sm text-ink/70">{% translate "Sadhana Report" %} · {% translate "ISKCON Gorakhpur" %}</p>
+    </div>
+    <form method="post" class="card space-y-4" novalidate>
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}
+        <p class="rounded-lg bg-maroon/10 px-3 py-2 text-sm text-maroon" role="alert">{{ error }}</p>
+      {% endfor %}
+      {% include "partials/form_field.html" with field=form.username %}
+      {% include "partials/form_field.html" with field=form.password %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn-primary">{% translate "Log in" %}</button>
+    </form>
+    <p class="mt-4 text-center text-xs text-ink/70">{% translate "Forgot your password? Please ask a temple administrator to reset it." %}</p>
+  </div>
+</main>
+{% endblock %}

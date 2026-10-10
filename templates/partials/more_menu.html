@@ -1,0 +1,16 @@
+{% load i18n %}
+<div id="more-sheet" class="fixed inset-0 z-20 hidden">
+  <div data-more-close class="absolute inset-0 bg-ink/40"></div>
+  <div class="absolute inset-x-0 bottom-0 mx-auto max-w-3xl rounded-t-2xl bg-white p-4 pb-[calc(72px+env(safe-area-inset-bottom))] shadow-lg">
+    <p class="mb-2 px-3 font-serif text-lg font-bold text-maroon">{{ user.display_name }}</p>
+    <a href="{% url 'devotees' %}" class="sheet-link">{% translate "Devotees" %}</a>
+    <a href="{% url 'password_change' %}" class="sheet-link">{% translate "Change password" %}</a>
+    {% if user.is_superuser %}
+      <a href="{% url 'admin:index' %}" class="sheet-link">{% translate "Manage (admin)" %}</a>
+    {% endif %}
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="sheet-link text-maroon">{% translate "Logout" %}</button>
+    </form>
+  </div>
+</div>

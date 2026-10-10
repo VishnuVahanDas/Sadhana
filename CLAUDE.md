@@ -1,0 +1,37 @@
+# CLAUDE.md — Sadhana Report
+
+Project brief for Claude Code. The full, authoritative specification is in **`docs/SPEC.md`** — read it before writing code, and follow it. If something in the spec seems wrong or ambiguous, ask instead of guessing.
+
+## What this is
+A private, mobile-first Django web app for ISKCON Gorakhpur where ~20–25 devotees log daily sadhana (hearing, reading, seva, rounds, notes + configurable fields) and view reports, streaks and rank tables. Domain: `sadhna.iskcongorakhpur.com`.
+
+## Non-negotiables
+- **Stack:** Python 3.12, Django 5.x, PostgreSQL (psycopg 3), server-rendered templates, Tailwind (standalone CLI), HTMX, Chart.js, openpyxl. No SPA, no React.
+- **Custom User model with email login** must exist before the first migration.
+- **Two roles only:** superuser and user. "Coordinator" is a FK field on User, not a role. Multiple superusers allowed; superusers are also normal users. Never allow removing the last superuser.
+- **Everyone can view everyone's reports** (including notes). No self-registration. No email password reset — superusers reset passwords.
+- **"Inactive" = `is_participating=False`**: can still log in, hidden from rank tables and group analysis. Do NOT use Django's `is_active` for this.
+- **One entry per user per day**, enforced by a DB `UniqueConstraint(user, date)`; one value per field per entry likewise. Entry form is create-or-update, never a duplicate error.
+- **Configurable fields** (`SadhanaField`) with types `minutes`, `count`, `time`, `boolean`, `text`, plus per-user enable/disable (`UserFieldSetting`). Seed data per SPEC §4.2.
+- **Edit lock / backfill limit** are settings toggles, **off by default**; superusers are never restricted.
+- **Audit log**: one row per changed field value; append-only.
+- **Streaks**: Hearing, Reading, Seva (and Mangala Arati when enabled). No streak for Rounds. Show both normal and on-time streaks. Logic lives in pure, unit-tested functions in `sadhana/services/streaks.py`.
+- **Time:** all "today" logic in `Asia/Kolkata`; weeks start Monday; day rollover hour 4 AM.
+- **Display names:** always `display_name` (spiritual name, else name). Email is login-only.
+- **i18n-ready:** wrap all user-facing strings in `gettext`/`{% translate %}`; English only for now.
+- **Theme:** saffron `#E8751A`, maroon `#7A1F2B`, gold `#C9A227`, cream `#FFF8EE`, ink `#2B2118`; Noto Sans/Noto Serif. Mobile-first, tap targets ≥ 44px.
+
+## Server safety (critical)
+This app will share a VPS with the live **iskcongorakhpur.com** Django site, which has a working payment gateway. Never modify that site's Nginx config, systemd units, venv, database, or files. Only add new, separate files for this project. Always run `sudo nginx -t` before any reload. Ask before running any command on the server.
+
+## Working style
+- Build in the phases in SPEC §15. Stop at the end of each phase, summarise what was built and how to test it, and wait for approval before the next phase.
+- Write tests for services and constraints (SPEC §13) as you go; keep them passing.
+- Keep secrets in `.env` (provide `.env.example`). Never commit secrets.
+- Prefer simple, readable Django over clever abstractions — this is a 25-user app.
+- Use migrations for seed data (fields, AppSettings singleton).
+
+## Commands (fill in as the project takes shape)
+- Run dev server: `.venv/bin/python manage.py runserver`
+- Tests: `.venv/bin/pytest`
+- Tailwind build: `./tailwindcss -i static/src/input.css -o static/css/app.css --minify`
