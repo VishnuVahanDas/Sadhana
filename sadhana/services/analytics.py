@@ -78,13 +78,17 @@ def load_days(user, start=None, end=None):
     return load_days_for_users([user], start, end)[user.pk]
 
 
-def average_days(period, date_joined, today):
+def average_days(period, date_joined, today, first_entry=None):
     """Calendar days the daily average is divided by.
 
-    The period start is bounded by the day the user joined, so new users are
-    not penalised; days after today do not count either.
+    The period start is bounded by the day the user started — the day they
+    joined, or their first entry if they backfilled earlier days — so new users
+    are not penalised. Days after today do not count either.
     """
-    start = max(period.start, timezone.localdate(date_joined))
+    started = timezone.localdate(date_joined)
+    if first_entry and first_entry < started:
+        started = first_entry
+    start = max(period.start, started)
     end = min(period.end, today)
     return max((end - start).days + 1, 0)
 
@@ -92,7 +96,7 @@ def average_days(period, date_joined, today):
 def field_stats(days, field, period, date_joined, today):
     in_period = [day for day in days.values() if period.start <= day.date <= period.end]
     total = sum(number(day.values.get(field.id)) for day in in_period)
-    divisor = average_days(period, date_joined, today)
+    divisor = average_days(period, date_joined, today, first_entry=min(days, default=None))
     return FieldStats(
         total=total,
         daily_average=round(total / divisor, 1) if divisor else 0.0,

@@ -69,6 +69,19 @@ def test_daily_average_is_bounded_by_date_joined(user, field, log, today):
     assert analytics.average_days(period, user.date_joined, today) == 3
 
 
+def test_backfilling_before_joining_moves_the_start_back(user, field, log, today):
+    joined(user, 0)  # account created today...
+    for days_ago in range(7):  # ...then a week of entries filled in
+        log(user, days_ago, hearing=30)
+    days = analytics.load_days(user)
+    period = periods.resolve("last_7", today)
+    stats = analytics.field_stats(days, field("hearing"), period, user.date_joined, today)
+    assert (stats.total, stats.daily_average) == (210, 30.0)  # 210 / 7, not 210 / 1
+    # Still bounded: over 30 days it divides by the 7 days since the first entry.
+    month = analytics.field_stats(days, field("hearing"), periods.resolve("last_30", today), user.date_joined, today)
+    assert month.daily_average == 30.0
+
+
 def test_average_days_edge_cases(user, today):
     joined(user, 365)
     last_week = periods.resolve("last_week", today)
