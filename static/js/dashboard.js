@@ -151,8 +151,59 @@
   }
 
   // The heatmap opens on the most recent weeks.
-  document.querySelectorAll("[data-scroll-end]").forEach(function (box) {
-    box.scrollLeft = box.scrollWidth;
+  var scrollToEnd = function () {
+    document.querySelectorAll("[data-scroll-end]").forEach(function (box) {
+      box.scrollLeft = box.scrollWidth;
+    });
+  };
+  scrollToEnd();
+
+  // Heatmap field selector: fetch the page for the new field and swap only that section,
+  // so the reader stays where they are instead of being sent back to the top.
+  document.addEventListener("change", function (event) {
+    var select = event.target.closest("[data-swap]");
+    if (!select) return;
+    var id = select.getAttribute("data-swap");
+    var section = document.getElementById(id);
+    var query = new URLSearchParams(new FormData(select.form)).toString();
+    var url = window.location.pathname + "?" + query;
+    var reload = function () {
+      window.location.href = url + "#" + id;
+    };
+    if (!section || !window.fetch || !window.DOMParser) return reload();
+    section.setAttribute("aria-busy", "true");
+    fetch(url, { credentials: "same-origin" })
+      .then(function (response) {
+        if (!response.ok) throw new Error(response.status);
+        return response.text();
+      })
+      .then(function (html) {
+        var fresh = new DOMParser().parseFromString(html, "text/html").getElementById(id);
+        if (!fresh) throw new Error("section missing");
+        section.replaceWith(fresh);
+        window.history.replaceState(null, "", url);
+        scrollToEnd();
+        // The other filters on the page (period, compare) must keep the chosen field.
+        document.querySelectorAll('form[method="get"]').forEach(function (form) {
+          if (fresh.contains(form)) return;
+          var input = form.querySelector('input[type="hidden"][name="' + select.name + '"]');
+          if (!input) {
+            input = document.createElement("input");
+            input.type = "hidden";
+            input.name = select.name;
+            form.appendChild(input);
+          }
+          input.value = select.value;
+        });
+        document.querySelectorAll("a[data-filter-link]").forEach(function (link) {
+          var target = new URL(link.href, window.location.href);
+          target.searchParams.set(select.name, select.value);
+          link.href = target.pathname + target.search;
+        });
+        var replacement = document.getElementById(select.id);
+        if (replacement) replacement.focus();
+      })
+      .catch(reload);
   });
 
   // Touch screens have no hover: show the tapped day's value under the heatmap.

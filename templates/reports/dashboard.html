@@ -142,14 +142,16 @@
 {% endif %}
 
 {% if heat_field %}
-<section aria-label="{% translate 'Calendar' %}" class="mb-6">
+{# Changing the field swaps only this section (dashboard.js), so the page does not jump back to the top. #}
+<section id="calendar" aria-label="{% translate 'Calendar' %}" class="mb-6 scroll-mt-20">
   <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
     <h2 class="section-title">{% translate "Last 365 days" %}</h2>
-    <form method="get" class="flex items-center gap-2">
+    {# The #calendar target is the fallback: a full reload still lands on this section. #}
+    <form method="get" action="#calendar" class="flex items-center gap-2">
       {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
   {% if compare %}<input type="hidden" name="compare" value="1">{% endif %}
       <label for="heat" class="sr-only">{% translate "Field" %}</label>
-      <select id="heat" name="heat" class="input !w-auto" data-autosubmit>
+      <select id="heat" name="heat" class="input !w-auto" data-swap="calendar">
         {% for field in heat_fields %}
           <option value="{{ field.key }}" {% if field == heat_field %}selected{% endif %}>{{ field.label }}</option>
         {% endfor %}

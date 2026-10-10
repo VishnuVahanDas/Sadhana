@@ -1,6 +1,6 @@
 {% load i18n %}
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-  <a href="{{ compare_url }}" class="tab {% if compare %}tab-active{% endif %}" role="switch" aria-checked="{% if compare %}true{% else %}false{% endif %}">
+  <a href="{{ compare_url }}" data-filter-link class="tab {% if compare %}tab-active{% endif %}" role="switch" aria-checked="{% if compare %}true{% else %}false{% endif %}">
     {% if compare %}✓ {% endif %}{% translate "Compare with previous period" %}
   </a>
   {% if compare %}
