@@ -1,3 +1,4 @@
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -114,7 +115,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Production hardening (SPEC §11). Nginx terminates TLS and forwards the scheme.
-if not DEBUG:
+# Skipped under pytest so the test suite also runs on the production server.
+TESTING = "pytest" in sys.modules
+if not DEBUG and not TESTING:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
