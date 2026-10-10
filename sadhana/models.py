@@ -1,8 +1,5 @@
-from datetime import timedelta
-
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -97,8 +94,9 @@ class SadhanaEntry(models.Model):
 
     @property
     def is_on_time(self):
-        """Entered on the sadhana day itself or the next day (IST)."""
-        return timezone.localdate(self.created_at) <= self.date + timedelta(days=1)
+        from .services.dates import is_on_time
+
+        return is_on_time(self.created_at, self.date)
 
 
 class EntryValue(models.Model):

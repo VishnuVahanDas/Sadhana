@@ -33,6 +33,20 @@
   {% endfor %}
 </div>
 
+{% if streak_badges %}
+  <ul class="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="{% translate 'Streaks' %}">
+    {% for badge in streak_badges %}
+      <li class="flex items-center justify-between gap-2 rounded-lg border border-gold bg-gold/15 px-3 py-2 text-sm">
+        <span class="font-medium">{{ badge.field.label }}</span>
+        <span class="whitespace-nowrap">
+          <span title="{% translate 'Current streak' %}">🔥 <strong>{{ badge.streaks.current }}</strong></span>
+          <span class="ml-2 text-ink/70" title="{% translate 'On-time current streak' %}">⏱ {{ badge.streaks.on_time_current }}</span>
+        </span>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 {% if blocked %}
   <p class="mb-4 rounded-lg border border-gold bg-gold/15 px-4 py-3 text-sm" role="status">{{ blocked }}</p>
   {% if entry %}

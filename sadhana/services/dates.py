@@ -14,3 +14,8 @@ def default_entry_date(rollover_hour, now=None):
     if local.hour < rollover_hour:
         return local.date() - timedelta(days=1)
     return local.date()
+
+
+def is_on_time(created_at, date):
+    """Entered on the sadhana day itself or the next day (IST)."""
+    return timezone.localdate(created_at) <= date + timedelta(days=1)

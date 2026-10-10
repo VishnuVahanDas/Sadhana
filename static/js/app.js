@@ -42,3 +42,18 @@ document.addEventListener("submit", function (event) {
   var message = event.target.getAttribute("data-confirm");
   if (message && !window.confirm(message)) event.preventDefault();
 });
+
+// Filters: a select marked data-autosubmit submits its form when changed.
+document.addEventListener("change", function (event) {
+  if (event.target.matches("[data-autosubmit]")) event.target.form.submit();
+  // The period picker submits straight away, except for "Custom range", which reveals the date inputs.
+  if (event.target.matches("[data-period-select]")) {
+    var form = event.target.form;
+    if (event.target.value === "custom") {
+      form.querySelector("[data-period-custom]").classList.remove("hidden");
+    } else {
+      form.querySelectorAll("[data-period-custom] input").forEach(function (input) { input.disabled = true; });
+      form.submit();
+    }
+  }
+});

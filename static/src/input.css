@@ -76,3 +76,33 @@
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
   }
 }
+
+/* Calendar heatmap. Plain CSS (not a Tailwind layer) because the level classes are built in the template. */
+.heatmap {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-template-rows: 16px repeat(7, 14px);
+  grid-auto-columns: 14px;
+  gap: 3px;
+}
+.heatmap-month {
+  font-size: 10px;
+  line-height: 16px;
+  color: rgba(43, 33, 24, 0.7);
+  overflow: visible;
+  white-space: nowrap;
+}
+.heat {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  padding: 0;
+  border: 1px solid rgba(43, 33, 24, 0.08);
+}
+/* cream -> light saffron -> saffron -> maroon */
+.heat-0 { background: #F3E6D0; }
+.heat-1 { background: #F6C79C; }
+.heat-2 { background: #EE9A55; }
+.heat-3 { background: #E8751A; }
+.heat-4 { background: #7A1F2B; }

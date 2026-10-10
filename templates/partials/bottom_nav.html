@@ -6,7 +6,7 @@
       <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
       <span>{% translate "Today" %}</span>
     </a>
-    <a href="{% url 'me' %}" class="nav-item {% if current == 'me' %}nav-item-active{% endif %}" {% if current == 'me' %}aria-current="page"{% endif %}>
+    <a href="{% url 'me' %}" class="nav-item {% if current == 'dashboard' and person == user %}nav-item-active{% endif %}" {% if current == 'dashboard' and person == user %}aria-current="page"{% endif %}>
       <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
       <span>{% translate "My Report" %}</span>
     </a>

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{{ person.display_name }} · {{ site_title }}{% endblock %}
+{% block content %}
+<header class="mb-4">
+  <div class="flex flex-wrap items-center gap-2">
+    <h1 class="text-2xl font-bold text-maroon">{{ person.display_name }}</h1>
+    {% if person.is_participating %}
+      <span class="badge bg-gold/30">{% translate "Active" %}</span>
+    {% else %}
+      <span class="badge bg-cream-dark">{% translate "Inactive" %}</span>
+    {% endif %}
+  </div>
+  <p class="text-sm text-ink/70">
+    {% translate "Coordinator" %}: {% if person.coordinator %}<a class="underline" href="{% url 'dashboard' person.coordinator.pk %}">{{ person.coordinator.display_name }}</a>{% else %}—{% endif %}
+  </p>
+</header>
+
+{% include "partials/period_picker.html" %}
+
+<section aria-label="{% translate 'Summary' %}" class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+  {% for card in cards %}
+    <div class="card">
+      <h2 class="mb-2 text-lg font-bold text-maroon">{{ card.field.label }}</h2>
+      <dl class="grid grid-cols-3 gap-2 text-center">
+        <div>
+          <dd class="text-xl font-semibold">{{ card.stats.total }}</dd>
+          <dt class="text-xs text-ink/70">{% translate "Total" %}{% if card.field.unit %} ({{ card.field.unit }}){% endif %}</dt>
+        </div>
+        <div>
+          <dd class="text-xl font-semibold">{{ card.stats.daily_average }}</dd>
+          <dt class="text-xs text-ink/70">{% translate "Daily average" %}</dt>
+        </div>
+        <div>
+          <dd class="text-xl font-semibold">{{ card.stats.days_filled }}</dd>
+          <dt class="text-xs text-ink/70">{% translate "Days filled" %}</dt>
+        </div>
+      </dl>
+      {% if card.streaks %}
+        <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-cream-dark pt-3 text-sm">
+          <div class="flex justify-between"><dt>🔥 {% translate "Current streak" %}</dt><dd class="font-semibold">{{ card.streaks.current }}</dd></div>
+          <div class="flex justify-between"><dt>{% translate "Longest" %}</dt><dd class="font-semibold">{{ card.streaks.longest }}</dd></div>
+          <div class="flex justify-between"><dt>⏱ {% translate "On-time current" %}</dt><dd class="font-semibold">{{ card.streaks.on_time_current }}</dd></div>
+          <div class="flex justify-between"><dt>{% translate "On-time longest" %}</dt><dd class="font-semibold">{{ card.streaks.on_time_longest }}</dd></div>
+        </dl>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p class="card text-sm text-ink/70">{% translate "No fields are enabled for this devotee." %}</p>
+  {% endfor %}
+</section>
+
+{% if charts %}
+<section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
+  <h2 class="text-lg font-bold text-maroon">{% translate "Daily trend" %}</h2>
+  {% for chart in charts %}
+    <div class="card">
+      <h3 class="mb-2 font-sans text-sm font-semibold">{{ chart.title }}{% if chart.unit %} <span class="font-normal text-ink/60">({{ chart.unit }})</span>{% endif %}</h3>
+      <div class="relative h-56"><canvas data-chart="{{ forloop.counter0 }}" role="img" aria-label="{{ chart.title }}"></canvas></div>
+    </div>
+  {% endfor %}
+  <p class="text-xs text-ink/60">{% translate "Tap a name in the legend to hide or show it. The same numbers are in the table below." %}</p>
+  {{ charts|json_script:"chart-data" }}
+</section>
+{% endif %}
+
+{% if heat_field %}
+<section aria-label="{% translate 'Calendar' %}" class="mb-6">
+  <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="text-lg font-bold text-maroon">{% translate "Last 365 days" %}</h2>
+    <form method="get" class="flex items-center gap-2">
+      {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <label for="heat" class="sr-only">{% translate "Field" %}</label>
+      <select id="heat" name="heat" class="input !w-auto" data-autosubmit>
+        {% for field in heat_fields %}
+          <option value="{{ field.key }}" {% if field == heat_field %}selected{% endif %}>{{ field.label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="card">
+    <div class="overflow-x-auto pb-1" data-scroll-end>
+      <div class="heatmap">
+        {% for column in heatmap %}
+          <div class="heatmap-month">{% if column.month %}{{ column.month|date:"M" }}{% endif %}</div>
+          {% for cell in column.cells %}
+            {% if cell %}
+              <button type="button" class="heat heat-{{ cell.level }}" data-heat
+                      title="{{ cell.date|date:'j M Y' }}: {% if heat_field.field_type == 'boolean' %}{% if cell.value %}{% translate 'Yes' %}{% else %}{% translate 'No' %}{% endif %}{% else %}{{ cell.value }} {{ heat_field.unit }}{% endif %}"></button>
+            {% else %}
+              <span></span>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+    <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink/70">
+      <span id="heat-detail" aria-live="polite">{% translate "Tap a day to see its value." %}</span>
+      <span class="flex items-center gap-1">{% translate "Less" %}
+        <span class="heat heat-0"></span><span class="heat heat-1"></span><span class="heat heat-2"></span><span class="heat heat-3"></span><span class="heat heat-4"></span>
+        {% translate "More" %}</span>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section aria-label="{% translate 'Entries' %}">
+  <h2 class="mb-2 text-lg font-bold text-maroon">{% translate "Entries" %} <span class="text-sm font-normal text-ink/60">({{ rows|length }})</span></h2>
+  {% if rows %}
+    <div class="card overflow-x-auto !p-0">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-cream-dark/60 text-xs uppercase tracking-wide text-ink/70">
+          <tr>
+            <th class="whitespace-nowrap px-3 py-2">{% translate "Date" %}</th>
+            {% for field in fields %}<th class="whitespace-nowrap px-3 py-2">{{ field.label }}</th>{% endfor %}
+            <th class="whitespace-nowrap px-3 py-2">{% translate "On time" %}</th>
+            {% if can_edit %}<th class="px-3 py-2"><span class="sr-only">{% translate "Edit" %}</span></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-cream-dark">
+          {% for row in rows %}
+            <tr>
+              <td class="whitespace-nowrap px-3 py-2 font-medium">{{ row.date|date:"D j M" }}</td>
+              {% for cell in row.cells %}
+                <td class="px-3 py-2 {% if cell|length > 30 %}min-w-[14rem]{% endif %}">
+                  {% if cell is None %}<span class="text-ink/40">–</span>{% else %}{{ cell|linebreaksbr }}{% endif %}
+                </td>
+              {% endfor %}
+              <td class="px-3 py-2">{% if row.on_time %}<span title="{% translate 'Entered on time' %}">✓</span>{% else %}<span class="text-ink/60" title="{% translate 'Entered late' %}">{% translate "Late" %}</span>{% endif %}</td>
+              {% if can_edit %}
+                <td class="px-3 py-2"><a href="{{ row.edit_url }}" class="inline-flex min-h-[44px] items-center font-medium text-maroon underline">{% translate "Edit" %}</a></td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="card text-sm text-ink/70">{% translate "No entries in this period." %}</p>
+  {% endif %}
+</section>
+
+<script src="{% static 'js/chart.umd.min.js' %}" defer></script>
+<script src="{% static 'js/dashboard.js' %}" defer></script>
+{% endblock %}

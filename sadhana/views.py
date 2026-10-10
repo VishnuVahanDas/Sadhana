@@ -14,7 +14,7 @@ from audit.services import get_client_ip
 
 from .forms import EntryForm
 from .models import AppSettings, SadhanaEntry
-from .services import dates, entries
+from .services import analytics, dates, entries
 from .services.fields import effective_fields
 
 RECENT_DAYS = 7
@@ -29,10 +29,8 @@ def placeholder(title, phase):
     return view
 
 
-me = placeholder(gettext_lazy("My Report"), 4)
 ranks = placeholder(gettext_lazy("Ranks"), 5)
 analysis = placeholder(gettext_lazy("Analysis"), 5)
-devotees = placeholder(gettext_lazy("Devotees"), 4)
 
 
 def _entry_owner(request):
@@ -86,9 +84,15 @@ def _entry_page(request, date, app_settings):
     filled = set(
         SadhanaEntry.objects.filter(user=owner, date__in=recent_dates).values_list("date", flat=True)
     )
+    history = analytics.load_days(owner)
     context = {
         "form": form,
         "owner": owner,
+        "streak_badges": [
+            {"field": field, "streaks": analytics.field_streaks(history, field, today)}
+            for field in fields
+            if field.has_streak
+        ],
         "date": date,
         "today": today,
         "is_today": date == today,
