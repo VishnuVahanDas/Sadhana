@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#7A1F2B">
-  <title>{% block title %}{% translate "Sadhana Report" %}{% endblock %}</title>
+  <title>{% block title %}{{ site_title }}{% endblock %}</title>
   <link rel="icon" href="{% static 'img/logo.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
   <header class="sticky top-0 z-20 bg-maroon text-cream shadow">
     <div class="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
       <img src="{% static 'img/logo.png' %}" alt="" class="h-9 w-9">
-      <a href="{% url 'home' %}" class="flex min-h-[44px] items-center font-serif text-lg font-bold">{% translate "Sadhana Report" %}</a>
+      <a href="{% url 'home' %}" class="flex min-h-[44px] items-center font-serif text-lg font-bold">{{ site_title }}</a>
       <span class="ml-auto truncate text-sm text-cream/80">{{ user.display_name }}</span>
     </div>
   </header>

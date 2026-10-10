@@ -18,3 +18,23 @@ def make_user(db):
 @pytest.fixture
 def user(make_user):
     return make_user()
+
+
+@pytest.fixture
+def superuser(make_user):
+    return make_user(email="admin@example.com", name="Admin", is_superuser=True)
+
+
+@pytest.fixture
+def app_settings(db):
+    from sadhana.models import AppSettings
+
+    return AppSettings.load()
+
+
+@pytest.fixture
+def field(db):
+    """Look up a seeded SadhanaField by key."""
+    from sadhana.models import SadhanaField
+
+    return lambda key: SadhanaField.objects.get(key=key)

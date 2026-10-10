@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "sadhana",
+    "audit",
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "sadhana.context_processors.site",
             ],
         },
     },

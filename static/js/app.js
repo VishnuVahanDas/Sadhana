@@ -18,3 +18,27 @@ setTimeout(function () {
     toast.remove();
   });
 }, 5000);
+
+// Entry form: "+15 / +30" chips add minutes to their field.
+document.addEventListener("click", function (event) {
+  var chip = event.target.closest("[data-add]");
+  if (!chip) return;
+  var input = document.getElementById(chip.getAttribute("data-target"));
+  if (!input) return;
+  var total = (parseInt(input.value, 10) || 0) + parseInt(chip.getAttribute("data-add"), 10);
+  var max = parseInt(input.getAttribute("max"), 10);
+  input.value = isNaN(max) ? total : Math.min(total, max);
+});
+
+// Entry form: picking a date opens that day's entry.
+document.addEventListener("change", function (event) {
+  var picker = event.target.closest("[data-entry-date]");
+  if (!picker || !picker.value) return;
+  window.location.href = picker.getAttribute("data-entry-date").replace("0000-00-00", picker.value);
+});
+
+// Ask before deleting.
+document.addEventListener("submit", function (event) {
+  var message = event.target.getAttribute("data-confirm");
+  if (message && !window.confirm(message)) event.preventDefault();
+});

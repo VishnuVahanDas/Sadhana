@@ -1,6 +1,6 @@
 # Sadhana Report — Full Specification
 
-**Site:** https://sadhna.iskcongorakhpur.com
+**Site:** https://sr.iskcongorakhpur.com
 **Owner:** ISKCON Gorakhpur
 **Users:** ~20–25 devotees (small, closed group — no public registration)
 **Version:** 1.0 (agreed 10 Oct 2026)

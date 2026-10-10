@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ date|date:"j M Y" }} · {{ site_title }}{% endblock %}
+{% block content %}
+{% if owner != user %}
+  <p class="mb-3 rounded-lg border border-maroon bg-maroon/10 px-4 py-3 text-sm text-maroon">
+    {% blocktranslate with name=owner.display_name %}You are editing the entry of {{ name }}.{% endblocktranslate %}
+  </p>
+{% endif %}
+
+<div class="mb-3 flex items-center gap-2">
+  <a href="{{ prev_url }}" class="btn-secondary" aria-label="{% translate 'Previous day' %}">‹</a>
+  <div class="flex-1 text-center">
+    <h1 class="text-xl font-bold text-maroon">
+      {% if is_today %}{% translate "Today" %}{% else %}{{ date|date:"l" }}{% endif %}
+    </h1>
+    <p class="text-sm text-ink/70">{{ date|date:"j F Y" }}</p>
+  </div>
+  {% if next_url %}
+    <a href="{{ next_url }}" class="btn-secondary" aria-label="{% translate 'Next day' %}">›</a>
+  {% else %}
+    <span class="btn-secondary opacity-40" aria-hidden="true">›</span>
+  {% endif %}
+</div>
+
+<div class="mb-4 flex gap-1" aria-label="{% translate 'Last 7 days' %}">
+  {% for day in recent %}
+    <a href="{{ day.url }}" class="day-pill {% if day.filled %}day-pill-filled{% endif %} {% if day.current %}day-pill-current{% endif %}"
+       title="{% if day.filled %}{% translate 'Filled' %}{% else %}{% translate 'Not filled' %}{% endif %}">
+      <span>{{ day.date|date:"D" }}</span>
+      <span class="font-semibold">{{ day.date|date:"j" }}{% if day.filled %} ✓{% endif %}</span>
+    </a>
+  {% endfor %}
+</div>
+
+{% if blocked %}
+  <p class="mb-4 rounded-lg border border-gold bg-gold/15 px-4 py-3 text-sm" role="status">{{ blocked }}</p>
+  {% if entry %}
+    <dl class="card divide-y divide-cream-dark">
+      {% for row in saved_values %}
+        <div class="flex justify-between gap-4 py-2">
+          <dt class="text-sm text-ink/70">{{ row.field.label }}</dt>
+          <dd class="text-right font-medium">
+            {% if row.field.field_type == "boolean" %}{% translate "Yes" %}{% elif row.field.field_type == "time" %}{{ row.value|time:"H:i" }}{% else %}{{ row.value|linebreaksbr }} {{ row.field.unit }}{% endif %}
+          </dd>
+        </div>
+      {% empty %}
+        <p class="py-2 text-sm text-ink/70">{% translate "Nothing was entered for this day." %}</p>
+      {% endfor %}
+    </dl>
+  {% endif %}
+{% else %}
+  <form method="post" action="{{ page_url }}" class="card space-y-5" novalidate>
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}
+      <p class="rounded-lg bg-maroon/10 px-3 py-2 text-sm text-maroon" role="alert">{{ error }}</p>
+    {% endfor %}
+    {% for field in form %}
+      {% with kind=field.field.sadhana_field.field_type %}
+      <div>
+        {% if kind == "boolean" %}
+          <label for="{{ field.id_for_label }}" class="flex min-h-[48px] items-center gap-3 text-base font-medium">
+            {{ field }} {{ field.label }}
+          </label>
+        {% else %}
+          <label for="{{ field.id_for_label }}" class="mb-1 block text-sm font-medium">
+            {{ field.label }}{% if field.field.sadhana_field.unit %} <span class="font-normal text-ink/60">({{ field.field.sadhana_field.unit }})</span>{% endif %}
+          </label>
+          {% if kind == "minutes" %}
+            <div class="flex items-center gap-2">
+              <div class="flex-1">{{ field }}</div>
+              <button type="button" class="chip" data-add="15" data-target="{{ field.id_for_label }}">+15</button>
+              <button type="button" class="chip" data-add="30" data-target="{{ field.id_for_label }}">+30</button>
+            </div>
+          {% else %}
+            {{ field }}
+          {% endif %}
+        {% endif %}
+        {% if field.help_text %}<p class="mt-1 text-xs text-ink/70">{{ field.help_text }}</p>{% endif %}
+        {% for error in field.errors %}<p class="mt-1 text-sm text-maroon" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      {% endwith %}
+    {% empty %}
+      <p class="text-sm text-ink/70">{% translate "No fields are enabled for you yet. Please ask a temple administrator." %}</p>
+    {% endfor %}
+    <button type="submit" class="btn-primary">{% if entry %}{% translate "Update" %}{% else %}{% translate "Save" %}{% endif %}</button>
+  </form>
+
+  {% if entry %}
+    <p class="mt-3 text-center text-xs text-ink/60">
+      {% blocktranslate with when=entry.updated_at|date:"j M, H:i" %}Last saved {{ when }}{% endblocktranslate %}
+      {% if entry.updated_by and entry.updated_by != owner %}
+        · {% blocktranslate with name=entry.updated_by.display_name %}by {{ name }}{% endblocktranslate %}
+      {% endif %}
+    </p>
+    <form method="post" action="{{ delete_url }}" class="mt-2 text-center" data-confirm="{% translate 'Delete this entry?' %}">
+      {% csrf_token %}
+      <button type="submit" class="min-h-[44px] px-4 text-sm text-maroon underline">{% translate "Delete this entry" %}</button>
+    </form>
+  {% endif %}
+{% endif %}
+
+<div class="mt-5">
+  <label for="entry-date" class="mb-1 block text-sm font-medium">{% translate "Go to another date" %}</label>
+  <input id="entry-date" type="date" class="input" value="{{ date|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}"
+         data-entry-date="{% url 'entry' '0000-00-00' %}{{ user_query }}">
+</div>
+{% endblock %}
