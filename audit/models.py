@@ -12,6 +12,7 @@ class AuditLog(models.Model):
         ENTRY_DELETE = "entry_delete", _("Entry deleted")
         USER_CREATE = "user_create", _("User created")
         USER_UPDATE = "user_update", _("User updated")
+        USER_DELETE = "user_delete", _("User deleted")
         PASSWORD_RESET = "password_reset", _("Password reset")
         USER_DEACTIVATE = "user_deactivate", _("User marked inactive")
         USER_REACTIVATE = "user_reactivate", _("User reactivated")

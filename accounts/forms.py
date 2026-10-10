@@ -124,3 +124,36 @@ class PasswordResetForm(StyledFormMixin, TemporaryPasswordMixin):
         self.user.must_change_password = True
         self.user.save(update_fields=["password", "must_change_password"])
         return password
+
+
+class UserDeleteForm(StyledFormMixin, forms.Form):
+    """Confirmation for permanently deleting a devotee.
+
+    If they coordinate anyone, `new_coordinator` says who takes over their team
+    (empty = nobody). Typing the name guards against a slip of the thumb.
+    """
+
+    new_coordinator = forms.ModelChoiceField(
+        label=_("Move their devotees to"),
+        queryset=User.objects.none(),
+        required=False,
+        empty_label=_("— no coordinator —"),
+    )
+    confirm_name = forms.CharField(label=_("Type the devotee's name to confirm"))
+
+    def __init__(self, *args, target, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.target = target
+        if target.team_members.exists():
+            self.fields["new_coordinator"].queryset = User.objects.filter(is_coordinator=True).exclude(pk=target.pk)
+        else:
+            del self.fields["new_coordinator"]
+        self.fields["confirm_name"].widget.attrs.update({"autocomplete": "off", "autocapitalize": "off"})
+
+    def clean_confirm_name(self):
+        typed = self.cleaned_data["confirm_name"].strip()
+        if typed.casefold() != self.target.display_name.strip().casefold():
+            raise ValidationError(
+                _("That does not match. Type “%(name)s” to confirm.") % {"name": self.target.display_name}
+            )
+        return typed

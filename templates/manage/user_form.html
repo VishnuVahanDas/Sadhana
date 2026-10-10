@@ -10,4 +10,9 @@
   <button type="submit" class="btn-primary">{% if target %}{% translate "Save" %}{% else %}{% translate "Create user" %}{% endif %}</button>
   <a href="{% url 'manage_users' %}" class="btn-secondary w-full">{% translate "Cancel" %}</a>
 </form>
+{% if target and target != user %}
+  <p class="mt-6 text-center">
+    <a href="{% url 'manage_user_delete' target.pk %}" class="inline-flex min-h-[44px] items-center px-4 text-sm text-maroon underline">{% translate "Delete this user…" %}</a>
+  </p>
+{% endif %}
 {% endblock %}

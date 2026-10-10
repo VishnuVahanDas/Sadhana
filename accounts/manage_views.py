@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 
@@ -6,7 +7,7 @@ from audit import services as audit
 from audit.models import AuditLog
 
 from .decorators import superuser_required
-from .forms import PasswordResetForm, UserCreateForm, UserForm
+from .forms import PasswordResetForm, UserCreateForm, UserDeleteForm, UserForm
 from .models import User
 
 Action = AuditLog.Action
@@ -76,3 +77,53 @@ def user_password(request, pk):
         audit.log(Action.PASSWORD_RESET, request.user, target_user=target, ip=audit.get_client_ip(request))
         return render(request, "manage/password_result.html", {"target": target, "password": password, "created": False})
     return render(request, "manage/password_form.html", {"form": form, "target": target})
+
+
+def _delete_blocked(actor, target):
+    """Why `target` cannot be deleted by `actor`, or None if they can."""
+    if target == actor:
+        return _("You cannot delete your own account. Ask another superuser.")
+    others = User.objects.filter(is_superuser=True, is_active=True).exclude(pk=target.pk)
+    if target.is_superuser and not others.exists():
+        return _("This is the last superuser and cannot be deleted.")
+    return None
+
+
+@superuser_required
+def user_delete(request, pk):
+    """Permanently delete a devotee and everything they entered, after a warning.
+
+    A coordinator's devotees are first moved to another coordinator, or to none.
+    """
+    target = get_object_or_404(User, pk=pk)
+    blocked = _delete_blocked(request.user, target)
+    team = list(target.team_members.order_by("name"))
+    form = UserDeleteForm(request.POST or None, target=target)
+    if request.method == "POST" and not blocked and form.is_valid():
+        ip = audit.get_client_ip(request)
+        new_coordinator = form.cleaned_data.get("new_coordinator")
+        name, entry_count = target.display_name, target.entries.count()
+        with transaction.atomic():
+            for member in team:
+                member.coordinator = new_coordinator
+                member.save(update_fields=["coordinator"])
+                audit.log(
+                    Action.USER_UPDATE, request.user, target_user=member, field_key="coordinator",
+                    old_value=name, new_value=new_coordinator.display_name if new_coordinator else None, ip=ip,
+                )
+            # The log's link to the user goes blank once they are deleted, so keep who it was as text.
+            audit.log(
+                Action.USER_DELETE, request.user,
+                old_value=f"{name} <{target.email}>, {entry_count} entries", ip=ip,
+            )
+            target.delete()
+        messages.success(request, _("%(name)s has been deleted.") % {"name": name})
+        return redirect("manage_users")
+    context = {
+        "form": form,
+        "target": target,
+        "blocked": blocked,
+        "team": team,
+        "entry_count": target.entries.count(),
+    }
+    return render(request, "manage/user_delete.html", context)

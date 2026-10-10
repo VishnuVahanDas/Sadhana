@@ -1,0 +1,41 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{% blocktranslate with name=target.display_name %}Delete {{ name }}{% endblocktranslate %}</h1>
+
+{% if blocked %}
+  <p class="card text-sm" role="alert">{{ blocked }}</p>
+  <a href="{% url 'manage_user_edit' target.pk %}" class="btn-secondary mt-3 w-full">{% translate "Back" %}</a>
+{% else %}
+  <div class="mb-4 rounded-xl border-2 border-maroon bg-maroon/10 px-4 py-3 text-sm" role="alert">
+    <p class="font-bold text-maroon">⚠ {% translate "This cannot be undone." %}</p>
+    <ul class="mt-2 list-disc space-y-1 pl-5">
+      <li>
+        {% blocktranslate count entries=entry_count with name=target.display_name %}{{ name }} and {{ entries }} sadhana entry will be permanently deleted.{% plural %}{{ name }} and all {{ entries }} sadhana entries will be permanently deleted.{% endblocktranslate %}
+      </li>
+      <li>{% translate "Past group totals, averages and ranks will change, because those entries no longer count." %}</li>
+      <li>{% translate "The audit log keeps its history, but without this person's name on the older rows." %}</li>
+      {% if team %}
+        <li>
+          {% blocktranslate count members=team|length %}{{ members }} devotee has this person as coordinator:{% plural %}{{ members }} devotees have this person as coordinator:{% endblocktranslate %}
+          <strong>{% for member in team %}{{ member.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>.
+          {% translate "Choose below who they move to." %}
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+
+  <p class="mb-4 rounded-xl border border-gold/50 bg-gold/15 px-4 py-3 text-sm">
+    {% translate "If this devotee has only stopped taking part, mark them inactive instead: they leave the ranks and analysis, and their history is kept." %}
+    <a href="{% url 'manage_user_edit' target.pk %}" class="font-medium text-maroon underline">{% translate "Go back and mark inactive" %}</a>
+  </p>
+
+  <form method="post" class="card space-y-4" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_fields.html" %}
+    <p class="text-xs text-ink/70">{% blocktranslate with name=target.display_name %}Type: {{ name }}{% endblocktranslate %}</p>
+    <button type="submit" class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-maroon px-4 py-2 text-base font-semibold text-cream shadow-sm">{% translate "Delete permanently" %}</button>
+    <a href="{% url 'manage_user_edit' target.pk %}" class="btn-secondary w-full">{% translate "Cancel" %}</a>
+  </form>
+{% endif %}
+{% endblock %}
