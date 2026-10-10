@@ -1,0 +1,11 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Settings" %}</h1>
+<form method="post" class="card space-y-4" novalidate>
+  {% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  <p class="text-xs text-ink/70">{% translate "Superusers are never restricted by the edit lock or the backfill limit." %}</p>
+  <button type="submit" class="btn-primary">{% translate "Save settings" %}</button>
+</form>
+{% endblock %}

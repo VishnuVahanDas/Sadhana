@@ -1,0 +1,18 @@
+{% for error in form.non_field_errors %}
+  <p class="rounded-lg bg-maroon/10 px-3 py-2 text-sm text-maroon" role="alert">{{ error }}</p>
+{% endfor %}
+{% for field in form.visible_fields %}
+  <div>
+    {% if field.widget_type == "checkbox" %}
+      <label for="{{ field.id_for_label }}" class="flex min-h-[48px] items-center gap-3 text-sm font-medium">
+        {{ field }} <span>{{ field.label }}</span>
+      </label>
+    {% else %}
+      <label for="{{ field.id_for_label }}" class="mb-1 block text-sm font-medium">{{ field.label }}</label>
+      {{ field }}
+    {% endif %}
+    {% if field.help_text %}<p class="mt-1 text-xs text-ink/70">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="mt-1 text-sm text-maroon" role="alert">{{ error }}</p>{% endfor %}
+  </div>
+{% endfor %}
+{% for field in form.hidden_fields %}{{ field }}{% endfor %}

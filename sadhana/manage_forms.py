@@ -1,0 +1,69 @@
+from django import forms
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
+from accounts.forms import StyledFormMixin
+
+from .models import AppSettings, SadhanaField
+
+FieldType = SadhanaField.FieldType
+MEASURABLE = (FieldType.MINUTES, FieldType.COUNT, FieldType.BOOLEAN)
+
+
+class SadhanaFieldForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = SadhanaField
+        fields = [
+            "label", "key", "field_type", "unit", "min_value", "max_value",
+            "has_streak", "is_rankable", "is_active", "enabled_by_default", "help_text",
+        ]
+        labels = {
+            "has_streak": _("Count streaks for this field"),
+            "is_rankable": _("Show in the rank table"),
+            "is_active": _("Active (inactive fields are hidden from all forms; history is kept)"),
+            "enabled_by_default": _("On by default for users without their own setting"),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            # Stored values depend on these two, so they are fixed once the field exists.
+            self.fields["key"].disabled = True
+            self.fields["field_type"].disabled = True
+
+    def clean(self):
+        cleaned = super().clean()
+        field_type = cleaned.get("field_type")
+        if field_type and field_type not in MEASURABLE:
+            for name in ("has_streak", "is_rankable"):
+                if cleaned.get(name):
+                    self.add_error(name, _("Only minutes, count and yes/no fields can have streaks or ranks."))
+        low, high = cleaned.get("min_value"), cleaned.get("max_value")
+        if low is not None and low < 0:
+            self.add_error("min_value", _("The minimum cannot be negative."))
+        if low is not None and high is not None and low > high:
+            self.add_error("max_value", _("The maximum must not be smaller than the minimum."))
+        return cleaned
+
+
+class AppSettingsForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = AppSettings
+        fields = [
+            "site_title", "day_rollover_hour",
+            "edit_lock_enabled", "edit_window_days",
+            "backfill_limit_enabled", "backfill_limit_days",
+        ]
+        labels = {
+            "edit_lock_enabled": _("Edit lock: users cannot change entries older than the edit window"),
+            "backfill_limit_enabled": _("Backfill limit: users cannot add entries older than the limit"),
+        }
+        help_texts = {
+            "day_rollover_hour": _("Before this hour (IST) the entry form opens on yesterday."),
+        }
+
+    def clean_day_rollover_hour(self):
+        hour = self.cleaned_data["day_rollover_hour"]
+        if hour > 23:
+            raise ValidationError(_("Enter an hour between 0 and 23."))
+        return hour

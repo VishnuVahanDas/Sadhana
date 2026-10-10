@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -65,6 +66,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.display_name
+
+    def clean(self):
+        super().clean()
+        # Never leave the system without a superuser who can log in.
+        if self.pk and not (self.is_superuser and self.is_active):
+            superusers = User.objects.filter(is_superuser=True, is_active=True)
+            if superusers.filter(pk=self.pk).exists() and not superusers.exclude(pk=self.pk).exists():
+                raise ValidationError(_("This is the last superuser. Make someone else a superuser first."))
 
     def save(self, *args, **kwargs):
         self.email = (self.email or "").strip().lower()

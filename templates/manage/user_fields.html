@@ -1,0 +1,21 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{% blocktranslate with name=target.display_name %}Fields for {{ name }}{% endblocktranslate %}</h1>
+<form method="post" class="card space-y-1">
+  {% csrf_token %}
+  {% for row in rows %}
+    <label class="flex min-h-[48px] items-center gap-3">
+      <input type="checkbox" name="field" value="{{ row.field.id }}" class="checkbox" {% if row.enabled %}checked{% endif %}>
+      <span class="flex-1 font-medium">{{ row.field.label }}</span>
+      <span class="text-xs text-ink/60">
+        {% if row.overridden %}{% translate "set for this user" %}{% else %}{% translate "default" %}{% endif %}
+      </span>
+    </label>
+  {% endfor %}
+  <div class="space-y-2 pt-3">
+    <button type="submit" class="btn-primary">{% translate "Save" %}</button>
+    <a href="{% url 'manage_users' %}" class="btn-secondary w-full">{% translate "Cancel" %}</a>
+  </div>
+</form>
+{% endblock %}

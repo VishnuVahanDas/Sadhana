@@ -50,7 +50,7 @@
   }
   .btn-secondary {
     @apply inline-flex min-h-[44px] items-center justify-center rounded-lg border border-cream-dark bg-white px-4
-      text-sm font-medium text-ink hover:bg-cream;
+      text-sm font-medium text-ink hover:bg-cream disabled:opacity-40;
   }
   .day-pill {
     @apply flex min-h-[52px] flex-1 flex-col items-center justify-center rounded-lg border border-cream-dark bg-white
@@ -61,5 +61,18 @@
   }
   .day-pill-current {
     @apply ring-2 ring-saffron;
+  }
+}
+
+@layer components {
+  .tab {
+    @apply inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-cream-dark bg-white px-4
+      text-sm font-medium text-ink;
+  }
+  .tab-active {
+    @apply border-maroon bg-maroon text-cream;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
   }
 }

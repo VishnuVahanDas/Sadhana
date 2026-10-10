@@ -18,7 +18,7 @@
       <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
       <span>{% translate "Analysis" %}</span>
     </a>
-    <button type="button" data-more-toggle aria-expanded="false" aria-controls="more-sheet" class="nav-item {% if current == 'devotees' or current == 'password_change' %}nav-item-active{% endif %}">
+    <button type="button" data-more-toggle aria-expanded="false" aria-controls="more-sheet" class="nav-item {% if current == 'devotees' or current == 'password_change' or 'manage_' in current %}nav-item-active{% endif %}">
       <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       <span>{% translate "More" %}</span>
     </button>

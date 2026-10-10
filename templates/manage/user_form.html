@@ -1,0 +1,13 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<h1 class="mb-3 text-xl font-bold text-maroon">
+  {% if target %}{% blocktranslate with name=target.display_name %}Edit {{ name }}{% endblocktranslate %}{% else %}{% translate "Add user" %}{% endif %}
+</h1>
+<form method="post" class="card space-y-4" novalidate>
+  {% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  <button type="submit" class="btn-primary">{% if target %}{% translate "Save" %}{% else %}{% translate "Create user" %}{% endif %}</button>
+  <a href="{% url 'manage_users' %}" class="btn-secondary w-full">{% translate "Cancel" %}</a>
+</form>
+{% endblock %}

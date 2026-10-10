@@ -1,0 +1,44 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<div class="mb-3 flex items-center justify-between gap-3">
+  <h1 class="text-xl font-bold text-maroon">{% translate "Sadhana fields" %}</h1>
+  <a href="{% url 'manage_field_add' %}" class="btn-primary !w-auto">{% translate "Add field" %}</a>
+</div>
+<ul class="space-y-3">
+  {% for field in fields %}
+    <li class="card {% if not field.is_active %}opacity-70{% endif %}">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-serif text-lg font-bold">{{ field.label }}</span>
+        <span class="badge bg-cream-dark">{{ field.get_field_type_display }}</span>
+        {% if not field.is_active %}<span class="badge bg-maroon text-cream">{% translate "Inactive" %}</span>{% endif %}
+        {% if field.enabled_by_default %}<span class="badge bg-gold/30">{% translate "On by default" %}</span>{% else %}<span class="badge bg-cream-dark">{% translate "Off by default" %}</span>{% endif %}
+        {% if field.has_streak %}<span class="badge bg-saffron-light">{% translate "Streak" %}</span>{% endif %}
+        {% if field.is_rankable %}<span class="badge bg-saffron-light">{% translate "Ranked" %}</span>{% endif %}
+        {% if field.is_core %}<span class="badge bg-cream-dark">{% translate "Core" %}</span>{% endif %}
+      </div>
+      <p class="mt-1 text-sm text-ink/70">{{ field.key }}{% if field.unit %} · {{ field.unit }}{% endif %}</p>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <form method="post" action="{% url 'manage_field_move' field.pk %}" class="flex gap-2">
+          {% csrf_token %}
+          <button name="direction" value="up" class="btn-secondary" aria-label="{% translate 'Move up' %}" {% if forloop.first %}disabled{% endif %}>↑</button>
+          <button name="direction" value="down" class="btn-secondary" aria-label="{% translate 'Move down' %}" {% if forloop.last %}disabled{% endif %}>↓</button>
+        </form>
+        <a href="{% url 'manage_field_edit' field.pk %}" class="btn-secondary">{% translate "Edit" %}</a>
+        <form method="post" action="{% url 'manage_field_apply' field.pk %}" class="flex gap-2"
+              data-confirm="{% translate 'This replaces every user’s own setting for this field. Continue?' %}">
+          {% csrf_token %}
+          <button name="enabled" value="1" class="btn-secondary">{% translate "On for all users" %}</button>
+          <button name="enabled" value="0" class="btn-secondary">{% translate "Off for all users" %}</button>
+        </form>
+        {% if not field.is_core and not field.has_values %}
+          <form method="post" action="{% url 'manage_field_delete' field.pk %}" data-confirm="{% translate 'Delete this field?' %}">
+            {% csrf_token %}
+            <button class="btn-secondary text-maroon">{% translate "Delete" %}</button>
+          </form>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

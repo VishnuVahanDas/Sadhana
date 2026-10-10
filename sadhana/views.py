@@ -32,7 +32,7 @@ def placeholder(title, phase):
 me = placeholder(gettext_lazy("My Report"), 4)
 ranks = placeholder(gettext_lazy("Ranks"), 5)
 analysis = placeholder(gettext_lazy("Analysis"), 5)
-devotees = placeholder(gettext_lazy("Devotees"), 3)
+devotees = placeholder(gettext_lazy("Devotees"), 4)
 
 
 def _entry_owner(request):

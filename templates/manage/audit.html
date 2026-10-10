@@ -1,0 +1,51 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Audit log" %}</h1>
+<form method="get" class="card mb-4 grid grid-cols-2 gap-3">
+  <div class="col-span-2 sm:col-span-1">
+    <label for="{{ form.user.id_for_label }}" class="mb-1 block text-sm font-medium">{{ form.user.label }}</label>{{ form.user }}
+  </div>
+  <div class="col-span-2 sm:col-span-1">
+    <label for="{{ form.action.id_for_label }}" class="mb-1 block text-sm font-medium">{{ form.action.label }}</label>{{ form.action }}
+  </div>
+  <div>
+    <label for="{{ form.date_from.id_for_label }}" class="mb-1 block text-sm font-medium">{{ form.date_from.label }}</label>{{ form.date_from }}
+  </div>
+  <div>
+    <label for="{{ form.date_to.id_for_label }}" class="mb-1 block text-sm font-medium">{{ form.date_to.label }}</label>{{ form.date_to }}
+  </div>
+  <button type="submit" class="btn-primary col-span-2">{% translate "Filter" %}</button>
+</form>
+
+<p class="mb-2 text-sm text-ink/70">{% blocktranslate count total=page.paginator.count %}{{ total }} row{% plural %}{{ total }} rows{% endblocktranslate %}</p>
+<ul class="space-y-2">
+  {% for row in page %}
+    <li class="card !p-3 text-sm">
+      <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+        <span class="font-semibold text-maroon">{{ row.get_action_display }}</span>
+        <time class="text-xs text-ink/60">{{ row.timestamp|date:"j M Y, H:i" }}</time>
+      </div>
+      <p class="text-ink/80">
+        {% translate "By" %} {% if row.actor %}{{ row.actor.display_name }}{% else %}—{% endif %}{% if row.target_user %} · {% translate "for" %} {{ row.target_user.display_name }}{% endif %}{% if row.entry_date %} · {{ row.entry_date|date:"j M Y" }}{% endif %}
+      </p>
+      {% if row.field_key or row.old_value or row.new_value %}
+        <p class="break-words">
+          {% if row.field_key %}<span class="font-medium">{{ row.field_key }}</span>: {% endif %}
+          <span class="text-ink/60">{{ row.old_value|default:"∅"|truncatechars:80 }}</span> → <span>{{ row.new_value|default:"∅"|truncatechars:80 }}</span>
+        </p>
+      {% endif %}
+    </li>
+  {% empty %}
+    <li class="card text-sm text-ink/70">{% translate "No audit rows match." %}</li>
+  {% endfor %}
+</ul>
+
+{% if page.has_other_pages %}
+  <div class="mt-4 flex items-center justify-between">
+    {% if page.has_previous %}<a class="btn-secondary" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.previous_page_number }}">‹ {% translate "Newer" %}</a>{% else %}<span></span>{% endif %}
+    <span class="text-sm text-ink/70">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="btn-secondary" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.next_page_number }}">{% translate "Older" %} ›</a>{% else %}<span></span>{% endif %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -6,7 +6,11 @@
     <a href="{% url 'devotees' %}" class="sheet-link">{% translate "Devotees" %}</a>
     <a href="{% url 'password_change' %}" class="sheet-link">{% translate "Change password" %}</a>
     {% if user.is_superuser %}
-      <a href="{% url 'admin:index' %}" class="sheet-link">{% translate "Manage (admin)" %}</a>
+      <p class="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "Manage" %}</p>
+      <a href="{% url 'manage_users' %}" class="sheet-link">{% translate "Users" %}</a>
+      <a href="{% url 'manage_fields' %}" class="sheet-link">{% translate "Fields" %}</a>
+      <a href="{% url 'manage_settings' %}" class="sheet-link">{% translate "Settings" %}</a>
+      <a href="{% url 'manage_audit' %}" class="sheet-link">{% translate "Audit log" %}</a>
     {% endif %}
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}

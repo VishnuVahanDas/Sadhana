@@ -27,3 +27,7 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {"classes": ("wide",), "fields": ("email", "name", "password1", "password2")}),
     )
+
+    def has_delete_permission(self, request, obj=None):
+        # Users are marked inactive, never deleted.
+        return False

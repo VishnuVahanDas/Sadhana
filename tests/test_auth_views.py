@@ -82,8 +82,10 @@ def test_layout_shows_display_name_and_bottom_nav(client, make_user):
     assert 'aria-current="page"' in html
 
 
-def test_admin_link_only_for_superusers(client, make_user):
+def test_manage_links_only_for_superusers(client, make_user):
     client.force_login(make_user())
-    assert "/admin/" not in client.get(reverse("home")).content.decode()
+    assert "/manage/" not in client.get(reverse("home")).content.decode()
     client.force_login(make_user(email="admin@example.com", is_superuser=True))
-    assert "/admin/" in client.get(reverse("home")).content.decode()
+    html = client.get(reverse("home")).content.decode()
+    for name in ["manage_users", "manage_fields", "manage_settings", "manage_audit"]:
+        assert reverse(name) in html
