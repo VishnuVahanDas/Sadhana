@@ -29,3 +29,14 @@ chmod +x tailwindcss
 ```
 
 The tests create and drop their own database (`test_<name>`), so the database role needs `CREATEDB`.
+
+## Demo data
+
+```bash
+.venv/bin/python manage.py seed_demo            # dev1..dev15 with about 60 days of entries
+.venv/bin/python manage.py seed_demo --delete   # remove them again
+```
+
+## Deployment
+
+See `deploy/DEPLOY.md`. The deploy files only add a new Nginx site, systemd unit and cron job; they never edit another site.

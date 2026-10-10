@@ -1,0 +1,28 @@
+# Sadhana Report (sadhna.iskcongorakhpur.com) — gunicorn.
+# Install as /etc/systemd/system/sadhna.service. A new, separate unit: it does
+# not touch iskcongkp.service or any other site.
+[Unit]
+Description=Sadhana Report (gunicorn)
+After=network.target postgresql.service
+
+[Service]
+User=vishnuvahan
+Group=www-data
+WorkingDirectory=/home/vishnuvahan/sadhana
+# Creates /run/sadhna/ for the socket and removes it on stop.
+RuntimeDirectory=sadhna
+RuntimeDirectoryMode=0750
+ExecStart=/home/vishnuvahan/sadhana/.venv/bin/gunicorn \
+    --workers 2 \
+    --bind unix:/run/sadhna/gunicorn.sock \
+    --umask 007 \
+    --access-logfile - \
+    --timeout 60 \
+    config.wsgi:application
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

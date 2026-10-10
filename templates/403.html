@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "You do not have access to this page" %} · {{ site_title }}{% endblock %}
+{% block content %}
+<div class="card text-center">
+  <h1 class="text-xl font-bold text-maroon">{% translate "You do not have access to this page" %}</h1>
+  <p class="mt-2 text-sm">{% translate "This page is only for temple administrators." %}</p>
+  <a href="{% url 'home' %}" class="btn-primary mt-4">{% translate "Back to Today" %}</a>
+</div>
+{% endblock %}
