@@ -6,6 +6,14 @@
 
 <form method="get" class="card mb-3 grid grid-cols-2 gap-3">
   {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+  <div class="col-span-2">
+    <label for="days" class="mb-1 block text-sm font-medium">{% translate "Days" %}</label>
+    <select id="days" name="days" class="input" data-autosubmit>
+      {% for key, label in day_filters %}
+        <option value="{{ key }}" {% if key == days_key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
   <div>
     <label for="coordinator" class="mb-1 block text-sm font-medium">{% translate "Group" %}</label>
     <select id="coordinator" name="coordinator" class="input" data-autosubmit>
@@ -45,9 +53,26 @@
   </p>
 </section>
 
+{% if festival_summaries %}
+<section aria-label="{% translate 'Festivals' %}" class="mb-6">
+  <h2 class="mb-2 text-lg font-bold text-maroon">{% translate "Festivals in this period" %}</h2>
+  <ul class="space-y-2">
+    {% for item in festival_summaries %}
+      <li class="rounded-lg border border-gold bg-gold/15 px-4 py-3 text-sm">
+        <strong>{{ item.festival.name }}</strong>
+        <span class="text-ink/70">({{ item.festival.start_date|date:"j M" }}{% if item.festival.end_date != item.festival.start_date %} – {{ item.festival.end_date|date:"j M" }}{% endif %})</span>
+        — {{ field.label }}: <strong>{{ item.total }}</strong>{% if field.unit %} {{ field.unit }}{% endif %}
+        {% blocktranslate count devotees=item.devotees %}across {{ devotees }} devotee{% plural %}across {{ devotees }} devotees{% endblocktranslate %}
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 <section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
   <h2 class="text-lg font-bold text-maroon">{% translate "Community trend" %}</h2>
   {% include "partials/charts.html" %}
+  <p class="text-xs text-ink/60">{% translate "Bars are each day; the line is the 7-day average. Gold bands are festival days. The trend always shows every day, whatever the Days filter says." %}</p>
 </section>
 
 <section aria-label="{% translate 'Devotees' %}" class="mb-6">

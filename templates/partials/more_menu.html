@@ -1,7 +1,8 @@
 {% load i18n %}
 <div id="more-sheet" class="fixed inset-0 z-20 hidden">
-  <div data-more-close class="absolute inset-0 bg-ink/40"></div>
-  <div class="absolute inset-x-0 bottom-0 mx-auto max-w-3xl rounded-t-2xl bg-white p-4 pb-[calc(72px+env(safe-area-inset-bottom))] shadow-lg">
+  <div data-more-close class="sheet-backdrop absolute inset-0 bg-black/50 backdrop-blur-[2px]"></div>
+  <div class="sheet-panel absolute inset-x-0 bottom-0 mx-auto max-w-3xl rounded-t-3xl bg-surface p-4 pb-[calc(88px+env(safe-area-inset-bottom))] shadow-2xl">
+    <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-cream-dark" aria-hidden="true"></div>
     <p class="mb-2 px-3 font-serif text-lg font-bold text-maroon">{{ user.display_name }}</p>
     <a href="{% url 'devotees' %}" class="sheet-link">{% translate "Devotees" %}</a>
     <a href="{% url 'password_change' %}" class="sheet-link">{% translate "Change password" %}</a>
@@ -9,8 +10,20 @@
       <p class="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "Manage" %}</p>
       <a href="{% url 'manage_users' %}" class="sheet-link">{% translate "Users" %}</a>
       <a href="{% url 'manage_fields' %}" class="sheet-link">{% translate "Fields" %}</a>
+      <a href="{% url 'manage_festivals' %}" class="sheet-link">{% translate "Festivals" %}</a>
       <a href="{% url 'manage_settings' %}" class="sheet-link">{% translate "Settings" %}</a>
       <a href="{% url 'manage_audit' %}" class="sheet-link">{% translate "Audit log" %}</a>
+      {# Temporary theme preview: changes the colours for everyone. #}
+      <form method="post" action="{% url 'manage_theme' %}" class="mt-2 px-3">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label for="theme-select" class="block text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "Theme (for everyone)" %}</label>
+        <select id="theme-select" name="theme" class="input mt-1" data-autosubmit>
+          {% for key, label, color in themes %}
+            <option value="{{ key }}" {% if key == theme %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
     {% endif %}
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}

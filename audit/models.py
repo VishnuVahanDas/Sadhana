@@ -21,6 +21,9 @@ class AuditLog(models.Model):
         FIELD_UPDATE = "field_update", _("Field updated")
         FIELD_TOGGLE_USER = "field_toggle_user", _("Field toggled for user")
         SETTINGS_UPDATE = "settings_update", _("Settings updated")
+        FESTIVAL_CREATE = "festival_create", _("Festival created")
+        FESTIVAL_UPDATE = "festival_update", _("Festival updated")
+        FESTIVAL_DELETE = "festival_delete", _("Festival deleted")
 
     timestamp = models.DateTimeField(_("timestamp"), auto_now_add=True)
     actor = models.ForeignKey(

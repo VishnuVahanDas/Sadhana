@@ -1,7 +1,7 @@
 {% load i18n %}
 {% with current=request.resolver_match.url_name %}
-<nav class="fixed inset-x-0 bottom-0 z-30 border-t border-maroon-dark bg-maroon pb-[env(safe-area-inset-bottom)]" aria-label="{% translate 'Main' %}">
-  <div class="mx-auto flex max-w-3xl">
+<nav class="app-nav pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" aria-label="{% translate 'Main' %}">
+  <div class="app-bar pointer-events-auto mx-auto flex max-w-md overflow-hidden rounded-2xl shadow-xl ring-1 ring-bar-ink/10">
     <a href="{% url 'home' %}" class="nav-item {% if current == 'home' or current == 'entry' %}nav-item-active{% endif %}" {% if current == 'home' or current == 'entry' %}aria-current="page"{% endif %}>
       <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
       <span>{% translate "Today" %}</span>

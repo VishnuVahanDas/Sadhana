@@ -5,11 +5,13 @@
 <main class="mandala flex min-h-screen flex-col items-center justify-center px-4 py-8">
   <div class="w-full max-w-sm">
     <div class="mb-6 text-center">
-      <img src="{% static 'img/logo.png' %}" alt="{% translate 'ISKCON Gorakhpur' %}" class="mx-auto h-24 w-24">
+      <div class="logo-glow mx-auto h-24 w-24">
+        <img src="{% static 'img/logo.png' %}" alt="{% translate 'ISKCON Gorakhpur' %}" class="h-24 w-24">
+      </div>
       <h1 class="mt-4 text-2xl font-bold text-maroon">{% translate "Hare Krishna" %} 🙏</h1>
       <p class="mt-1 text-sm text-ink/70">{{ site_title }} · {% translate "ISKCON Gorakhpur" %}</p>
     </div>
-    <form method="post" class="card space-y-4" novalidate>
+    <form method="post" class="card glass space-y-4 !p-5" novalidate>
       {% csrf_token %}
       {% for error in form.non_field_errors %}
         <p class="rounded-lg bg-maroon/10 px-3 py-2 text-sm text-maroon" role="alert">{{ error }}</p>

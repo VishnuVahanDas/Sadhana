@@ -1,19 +1,21 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
-from sadhana.models import SadhanaEntry, SadhanaField
-from sadhana.services import analytics, dates, periods, ranking
+from sadhana.models import Festival, SadhanaEntry, SadhanaField
+from sadhana.services import analytics, dates, festivals, periods, ranking
 from sadhana.services.fields import effective_fields
 
 from .exports import workbook_response
+from .services import scaling
 
 User = get_user_model()
 
-# Validated for colour-blind separation on a white surface; saffron first to match the theme.
-SERIES_COLORS = ["#D9660F", "#2A78D6", "#1BAF7A", "#4A3AA7"]
+Period = periods.Period
 
 
 def me(request):
@@ -46,8 +48,37 @@ def devotees(request):
 # --- Shared helpers -------------------------------------------------------
 
 
-def _labels(period):
-    return [date.strftime("%-d %b") for date in period.dates()]
+def _scale(field):
+    """(clean axis steps, floor) for a field's "usual range" cap."""
+    if field.field_type == SadhanaField.FieldType.MINUTES:
+        return scaling.MINUTE_STEPS, field.target or scaling.MINUTE_FLOOR
+    return scaling.COUNT_STEPS, field.target
+
+
+def _chart(title, unit, period, values, lead_in, festival_days, steps, floor):
+    """One bar chart: daily values, a 7-day average line, the usual-range cap and festival bands.
+
+    `values` are always the real numbers. The cap only tells the page where to
+    cut the axis; days above it are listed in `clipped` with their real value.
+    """
+    dates = period.dates()
+    labels = [date.strftime("%-d %b") for date in dates]
+    cap = scaling.usual_cap(values, steps, floor)
+    return {
+        "title": title,
+        "unit": unit,
+        "labels": labels,
+        "values": values,
+        "average": scaling.rolling_average(values, lead_in),
+        "cap": cap,
+        "clipped": [{"index": index, "label": labels[index], "value": value} for index, value in scaling.clipped(values, cap)],
+        "festivals": {index: ", ".join(festival_days[date]) for index, date in enumerate(dates) if date in festival_days},
+    }
+
+
+def _lead_in(period):
+    """The six days before a period, so the 7-day average starts with a full window."""
+    return Period(periods.CUSTOM, period.start - timedelta(days=scaling.ROLLING_WINDOW - 1), period.start - timedelta(days=1))
 
 
 def _period_line(period):
@@ -91,26 +122,20 @@ def _coordinator_name(user):
 # --- Individual dashboard -------------------------------------------------
 
 
-def _charts(days, fields, period):
-    """One chart per unit, so minutes and rounds never share an axis."""
-    groups = {}
+def _charts(days, fields, period, festival_days):
+    """One chart per numeric field, each with its own axis, so a spike in one never squashes another."""
+    charts = []
     for field in fields:
         if field.is_numeric:
-            groups.setdefault((field.field_type, field.unit), []).append(field)
-    charts = []
-    for (_field_type, unit), members in groups.items():
-        members = members[: len(SERIES_COLORS)]
-        charts.append(
-            {
-                "title": " · ".join(field.label for field in members),
-                "unit": unit,
-                "labels": _labels(period),
-                "datasets": [
-                    {"label": field.label, "color": SERIES_COLORS[index], "data": analytics.series(days, field, period)}
-                    for index, field in enumerate(members)
-                ],
-            }
-        )
+            steps, floor = _scale(field)
+            charts.append(
+                _chart(
+                    field.label, field.unit, period,
+                    analytics.series(days, field, period),
+                    analytics.series(days, field, _lead_in(period)),
+                    festival_days, steps, floor,
+                )
+            )
     return charts
 
 
@@ -145,18 +170,29 @@ def dashboard(request, pk):
         }
         for field in rankable
     ]
+    for card in cards:
+        # Percentages for the progress ring (days filled) and the bar (daily average against the target).
+        stats, target = card["stats"], card["field"].target
+        card["filled_pct"] = min(100, round(100 * stats.days_filled / period.days))
+        card["target_pct"] = min(100, round(100 * stats.daily_average / target)) if target else None
     heat_field = next((field for field in rankable if field.key == request.GET.get("heat")), None)
     heat_field = heat_field or (rankable[0] if rankable else None)
+    heat_top = None
+    if heat_field and heat_field.is_numeric:
+        # Colour by the usual range, not the year's biggest day; real values stay in the tooltips.
+        steps, floor = _scale(heat_field)
+        heat_top = scaling.usual_cap(list(analytics.heatmap_values(days, heat_field, today).values()), steps, floor)
     context = {
         "person": person,
         "period": period,
         "presets": periods.PRESETS,
         "fields": fields,
         "cards": cards,
-        "charts": _charts(days, fields, period),
+        "charts": _charts(days, fields, period, festivals.festival_dates(period.start, period.end)),
         "heat_fields": rankable,
         "heat_field": heat_field,
-        "heatmap": analytics.heatmap(days, heat_field, today) if heat_field else [],
+        "heatmap": analytics.heatmap(days, heat_field, today, top=heat_top) if heat_field else [],
+        "heat_top": heat_top,
         "rows": rows,
         "can_edit": request.user == person or request.user.is_superuser,
         "keep": {"heat": heat_field.key} if heat_field and "heat" in request.GET else {},
@@ -185,36 +221,65 @@ def dashboard_export(request, pk):
 # --- Group / All analysis -------------------------------------------------
 
 
+def _day_filter(request, period):
+    """(?days= key, festival dates in the period, date -> bool filter or None)."""
+    key = festivals.choose(request.GET.get("days", ""))
+    festival_days = festivals.festival_dates(period.start, period.end)
+    return key, festival_days, festivals.day_filter(key, festival_days)
+
+
 def _analysis_data(request):
     today = dates.today()
     period = periods.from_request(request.GET, today)
     people, coordinator = _scope(request)
     fields, field = _rankable_field(request, "field")
+    days_key, festival_days, day_filter = _day_filter(request, period)
     days_by_user = analytics.load_days_for_users(people)
-    rows = analytics.user_rows(people, days_by_user, field, period, today) if field else []
+    rows = analytics.user_rows(people, days_by_user, field, period, today, day_filter) if field else []
     rows.sort(key=lambda row: (-row.stats.total, row.user.display_name.lower()))
-    return today, period, people, coordinator, fields, field, days_by_user, rows
+    return today, period, people, coordinator, fields, field, days_by_user, rows, days_key, festival_days, day_filter
+
+
+def _festival_summaries(period, people, days_by_user, field):
+    """For each festival in the period: the field's total on its days and how many devotees took part."""
+    summaries = []
+    for festival in Festival.objects.filter(start_date__lte=period.end, end_date__gte=period.start).order_by("start_date"):
+        start, end = max(festival.start_date, period.start), min(festival.end_date, period.end)
+        totals = [
+            sum(
+                analytics.number(day.values.get(field.id))
+                for date, day in days_by_user[user.pk].items()
+                if start <= date <= end
+            )
+            for user in people
+        ]
+        summaries.append({"festival": festival, "total": sum(totals), "devotees": sum(1 for total in totals if total)})
+    return summaries
 
 
 def analysis(request):
-    today, period, people, coordinator, fields, field, days_by_user, rows = _analysis_data(request)
+    (today, period, people, coordinator, fields, field, days_by_user, rows,
+     days_key, festival_days, day_filter) = _analysis_data(request)
     charts = []
     if field:
         totals, averages = analytics.community_series(people, days_by_user, field, period)
+        lead_totals, lead_averages = analytics.community_series(people, days_by_user, field, _lead_in(period))
         unit = field.unit or (_("days") if field.field_type == SadhanaField.FieldType.BOOLEAN else "")
-        for title, data in [(_("Daily total"), totals), (_("Daily average per person"), averages)]:
-            charts.append(
-                {
-                    "title": f"{field.label} — {title}",
-                    "unit": unit,
-                    "labels": _labels(period),
-                    "datasets": [{"label": title, "color": SERIES_COLORS[0], "data": data}],
-                }
-            )
+        steps, floor = _scale(field)
+        charts = [
+            # The group total has no per-person floor: it grows with the number of devotees.
+            _chart(f"{field.label} — {_('Daily total')}", unit, period, totals, lead_totals, festival_days, steps, None),
+            _chart(
+                f"{field.label} — {_('Daily average per person')}", unit, period,
+                averages, lead_averages, festival_days, steps, floor,
+            ),
+        ]
     filled_today = set(SadhanaEntry.objects.filter(date=today, user__in=people).values_list("user_id", flat=True))
     keep = {"field": field.key} if field else {}
     if coordinator:
         keep["coordinator"] = coordinator.pk
+    if days_key != festivals.ALL:
+        keep["days"] = days_key
     context = {
         "period": period,
         "presets": periods.PRESETS,
@@ -223,7 +288,10 @@ def analysis(request):
         "field": field,
         "coordinator": coordinator,
         "coordinators": User.objects.filter(is_coordinator=True),
-        "summary": analytics.group_summary(rows, period, today),
+        "day_filters": festivals.DAY_FILTERS,
+        "days_key": days_key,
+        "summary": analytics.group_summary(rows, period, today, day_filter),
+        "festival_summaries": _festival_summaries(period, people, days_by_user, field) if field else [],
         "charts": charts,
         "rows": rows,
         "not_filled": sorted((user for user in people if user.pk not in filled_today), key=lambda u: u.display_name.lower()),
@@ -233,7 +301,7 @@ def analysis(request):
 
 
 def analysis_export(request):
-    _today, period, _people, coordinator, _fields, field, _days, rows = _analysis_data(request)
+    _today, period, _people, coordinator, _fields, field, _days, rows, days_key, *_rest = _analysis_data(request)
     headers = [_("Name"), _("Coordinator"), _("Total"), _("Daily average"), _("Days filled")]
     if field and field.has_streak:
         headers += [_("Current streak"), _("On-time streak")]
@@ -248,7 +316,7 @@ def analysis_export(request):
     return workbook_response(
         f"sadhana-analysis-{label}-{period.start}-to-{period.end}",
         _("Analysis"),
-        [f"{label} — {scope}", _period_line(period)],
+        [f"{label} — {scope}", _period_line(period), str(dict(festivals.DAY_FILTERS)[days_key])],
         headers,
         data,
     )
@@ -263,18 +331,21 @@ def _ranks_data(request):
     people, coordinator = _scope(request)
     fields, field = _rankable_field(request, "metric")
     option = ranking.choose(field, request.GET.get("by", "")) if field else None
+    days_key, _festival_days, day_filter = _day_filter(request, period)
     ranked = []
     if field:
         days_by_user = analytics.load_days_for_users(people)
-        ranked = ranking.rank_rows(analytics.user_rows(people, days_by_user, field, period, today), option)
-    return period, coordinator, fields, field, option, ranked
+        ranked = ranking.rank_rows(analytics.user_rows(people, days_by_user, field, period, today, day_filter), option)
+    return period, coordinator, fields, field, option, ranked, days_key
 
 
 def ranks(request):
-    period, coordinator, fields, field, option, ranked = _ranks_data(request)
+    period, coordinator, fields, field, option, ranked, days_key = _ranks_data(request)
     keep = {"metric": field.key, "by": option.key} if field else {}
     if coordinator:
         keep["coordinator"] = coordinator.pk
+    if days_key != festivals.ALL:
+        keep["days"] = days_key
     context = {
         "period": period,
         "presets": periods.PRESETS,
@@ -285,17 +356,19 @@ def ranks(request):
         "options": ranking.options_for(field) if field else [],
         "coordinator": coordinator,
         "coordinators": User.objects.filter(is_coordinator=True),
+        "day_filters": festivals.DAY_FILTERS,
+        "days_key": days_key,
         "ranked": ranked,
     }
     return render(request, "reports/ranks.html", context)
 
 
 def ranks_export(request):
-    period, coordinator, _fields, field, option, ranked = _ranks_data(request)
+    period, coordinator, _fields, field, option, ranked, days_key = _ranks_data(request)
     label = f"{field.label} — {option.label}" if field else ""
     intro = [label, coordinator.display_name if coordinator else _("All devotees")]
     if option and option.uses_period:
-        intro.append(_period_line(period))
+        intro += [_period_line(period), str(dict(festivals.DAY_FILTERS)[days_key])]
     return workbook_response(
         f"sadhana-ranks-{field.key if field else ''}-{option.key if option else ''}",
         _("Ranks"),

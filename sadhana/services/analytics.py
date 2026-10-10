@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import timedelta
-from math import ceil
+from statistics import median
 
 from django.utils import timezone
 
@@ -28,6 +28,7 @@ class FieldStats:
     total: int
     daily_average: float
     days_filled: int
+    typical_day: float = 0  # median of the daily values, counting days with nothing entered as 0
 
 
 @dataclass(frozen=True)
@@ -78,29 +79,45 @@ def load_days(user, start=None, end=None):
     return load_days_for_users([user], start, end)[user.pk]
 
 
-def average_days(period, date_joined, today, first_entry=None):
-    """Calendar days the daily average is divided by.
+def counted_dates(period, date_joined, today, first_entry=None, day_filter=None):
+    """The calendar days that the daily average and the typical day are worked out over.
 
     The period start is bounded by the day the user started — the day they
     joined, or their first entry if they backfilled earlier days — so new users
-    are not penalised. Days after today do not count either.
+    are not penalised. Days after today do not count. `day_filter` (date -> bool)
+    narrows it further, e.g. to regular days only.
     """
     started = timezone.localdate(date_joined)
     if first_entry and first_entry < started:
         started = first_entry
-    start = max(period.start, started)
-    end = min(period.end, today)
-    return max((end - start).days + 1, 0)
+    day, end = max(period.start, started), min(period.end, today)
+    dates = []
+    while day <= end:
+        if day_filter is None or day_filter(day):
+            dates.append(day)
+        day += timedelta(days=1)
+    return dates
 
 
-def field_stats(days, field, period, date_joined, today):
-    in_period = [day for day in days.values() if period.start <= day.date <= period.end]
+def average_days(period, date_joined, today, first_entry=None, day_filter=None):
+    """How many calendar days the daily average is divided by."""
+    return len(counted_dates(period, date_joined, today, first_entry, day_filter))
+
+
+def field_stats(days, field, period, date_joined, today, day_filter=None):
+    in_period = [
+        day for day in days.values()
+        if period.start <= day.date <= period.end and (day_filter is None or day_filter(day.date))
+    ]
     total = sum(number(day.values.get(field.id)) for day in in_period)
-    divisor = average_days(period, date_joined, today, first_entry=min(days, default=None))
+    dates = counted_dates(period, date_joined, today, min(days, default=None), day_filter)
+    daily = [number(days[date].values.get(field.id)) if date in days else 0 for date in dates]
+    typical = median(daily) if daily else 0
     return FieldStats(
         total=total,
-        daily_average=round(total / divisor, 1) if divisor else 0.0,
+        daily_average=round(total / len(dates), 1) if dates else 0.0,
         days_filled=len(in_period),
+        typical_day=round(typical, 1) if typical % 1 else int(typical),
     )
 
 
@@ -114,13 +131,21 @@ def series(days, field, period):
     return [number(days[date].values.get(field.id)) if date in days else 0 for date in period.dates()]
 
 
-def heatmap(days, field, today):
-    """Last 365 days as week columns (Monday first), each cell with a 0–4 intensity level."""
+def heatmap_values(days, field, today):
+    """The last 365 days of one field as {date: number}, for days that have an entry."""
     start = today - timedelta(days=HEATMAP_DAYS - 1)
-    values = {
-        date: number(day.values.get(field.id)) for date, day in days.items() if start <= date <= today
-    }
-    highest = max(values.values(), default=0)
+    return {date: number(day.values.get(field.id)) for date, day in days.items() if start <= date <= today}
+
+
+def heatmap(days, field, today, top=None):
+    """Last 365 days as week columns (Monday first), each cell with a 0–4 intensity level.
+
+    `top` is the value that gets the darkest colour (the "usual range" cap);
+    without it the scale runs to the largest value of the year.
+    """
+    start = today - timedelta(days=HEATMAP_DAYS - 1)
+    values = heatmap_values(days, field, today)
+    highest = top or max(values.values(), default=0)
     first_monday = start - timedelta(days=start.weekday())
     weeks, date = [], first_monday
     while date <= today:
@@ -128,7 +153,7 @@ def heatmap(days, field, today):
         for _ in range(7):
             if start <= date <= today:
                 value = values.get(date, 0)
-                level = ceil(value / highest * HEATMAP_LEVELS) if value and highest else 0
+                level = min(HEATMAP_LEVELS, -(-value * HEATMAP_LEVELS // highest)) if value and highest else 0
                 week.append({"date": date, "value": value, "level": level, "filled": date in values})
             else:
                 week.append(None)
@@ -148,24 +173,24 @@ def is_measurable(field):
     return field.is_numeric or field.field_type == SadhanaField.FieldType.BOOLEAN
 
 
-def user_rows(users, days_by_user, field, period, today):
-    """A UserRow per user for one field."""
+def user_rows(users, days_by_user, field, period, today, day_filter=None):
+    """A UserRow per user for one field. `day_filter` narrows the stats; streaks always use all days."""
     return [
         UserRow(
             user=user,
-            stats=field_stats(days_by_user[user.pk], field, period, user.date_joined, today),
+            stats=field_stats(days_by_user[user.pk], field, period, user.date_joined, today, day_filter),
             streaks=field_streaks(days_by_user[user.pk], field, today) if field.has_streak else None,
         )
         for user in users
     ]
 
 
-def group_summary(rows, period, today):
+def group_summary(rows, period, today, day_filter=None):
     """Total over the people in scope, and the average per person (overall and per day)."""
     people = len(rows)
     total = sum(row.stats.total for row in rows)
     per_person = total / people if people else 0
-    days = max((min(period.end, today) - period.start).days + 1, 0)
+    days = sum(1 for day in period.dates() if day <= today and (day_filter is None or day_filter(day)))
     return GroupSummary(
         people=people,
         total=total,

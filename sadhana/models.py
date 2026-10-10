@@ -27,6 +27,12 @@ class SadhanaField(models.Model):
     enabled_by_default = models.BooleanField(_("enabled by default"), default=True)
     order = models.IntegerField(_("order"), default=0)
     help_text = models.CharField(_("help text"), max_length=200, blank=True)
+    target = models.PositiveIntegerField(
+        _("typical daily target"),
+        null=True,
+        blank=True,
+        help_text=_("For example 16 for rounds. Charts never zoom in closer than this."),
+    )
 
     class Meta:
         verbose_name = _("sadhana field")
@@ -153,6 +159,8 @@ class AppSettings(models.Model):
     backfill_limit_days = models.PositiveIntegerField(_("backfill limit (days)"), default=7)
     day_rollover_hour = models.PositiveSmallIntegerField(_("day rollover hour"), default=4)
     site_title = models.CharField(_("site title"), max_length=100, default="Sadhana Report")
+    # Temporary theme preview: the colour theme everyone sees (keys in sadhana/themes.py).
+    theme = models.CharField(_("theme"), max_length=20, default="saffron")
 
     class Meta:
         verbose_name = _("app settings")
@@ -168,3 +176,25 @@ class AppSettings(models.Model):
     @classmethod
     def load(cls):
         return cls.objects.get_or_create(pk=1)[0]
+
+
+class Festival(models.Model):
+    """A festival or event. Its days can be highlighted on charts and filtered in analysis."""
+
+    name = models.CharField(_("name"), max_length=100)
+    start_date = models.DateField(_("start date"))
+    end_date = models.DateField(_("end date"), help_text=_("Same as the start date for a single day."))
+    notes = models.TextField(_("notes"), blank=True)
+
+    class Meta:
+        verbose_name = _("festival")
+        verbose_name_plural = _("festivals")
+        ordering = ["-start_date", "name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__gte=models.F("start_date")), name="festival_ends_on_or_after_start"
+            ),
+        ]
+
+    def __str__(self):
+        return self.name

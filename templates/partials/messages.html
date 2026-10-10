@@ -1,7 +1,7 @@
 {% if messages %}
   <div class="mb-4 space-y-2" role="status" aria-live="polite">
     {% for message in messages %}
-      <div data-toast class="rounded-lg border px-4 py-3 text-sm {% if message.tags == 'error' %}border-maroon bg-maroon/10 text-maroon{% else %}border-gold bg-gold/15 text-ink{% endif %}">
+      <div data-toast class="rounded-xl border px-4 py-3 text-sm shadow-sm {% if message.tags == 'error' %}border-maroon bg-maroon/10 text-maroon{% else %}border-gold bg-gold/15 text-ink{% endif %}">
         {{ message }}
       </div>
     {% endfor %}

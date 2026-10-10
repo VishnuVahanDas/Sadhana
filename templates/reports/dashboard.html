@@ -2,49 +2,93 @@
 {% load static i18n %}
 {% block title %}{{ person.display_name }} · {{ site_title }}{% endblock %}
 {% block content %}
-<header class="mb-4">
-  <div class="flex flex-wrap items-center gap-2">
-    <h1 class="text-2xl font-bold text-maroon">{{ person.display_name }}</h1>
-    {% if person.is_participating %}
-      <span class="badge bg-gold/30">{% translate "Active" %}</span>
-    {% else %}
-      <span class="badge bg-cream-dark">{% translate "Inactive" %}</span>
-    {% endif %}
+<header class="hero mb-4">
+  <div class="flex items-center gap-3">
+    <span class="avatar" aria-hidden="true">{{ person.display_name|first|upper }}</span>
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        <h1 class="truncate text-2xl font-bold">{{ person.display_name }}</h1>
+        {% if person.is_participating %}
+          <span class="badge bg-gold text-saffron-ink">{% translate "Active" %}</span>
+        {% else %}
+          <span class="badge bg-bar-ink/20">{% translate "Inactive" %}</span>
+        {% endif %}
+      </div>
+      <p class="text-sm text-bar-ink/80">
+        {% translate "Coordinator" %}: {% if person.coordinator %}<a class="underline" href="{% url 'dashboard' person.coordinator.pk %}">{{ person.coordinator.display_name }}</a>{% else %}—{% endif %}
+      </p>
+    </div>
   </div>
-  <p class="text-sm text-ink/70">
-    {% translate "Coordinator" %}: {% if person.coordinator %}<a class="underline" href="{% url 'dashboard' person.coordinator.pk %}">{{ person.coordinator.display_name }}</a>{% else %}—{% endif %}
-  </p>
 </header>
 
-{% include "partials/period_picker.html" %}
+{% include "partials/period_chips.html" %}
 
 <section aria-label="{% translate 'Summary' %}" class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
   {% for card in cards %}
-    <div class="card">
-      <h2 class="mb-2 text-lg font-bold text-maroon">{{ card.field.label }}</h2>
-      <dl class="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <dd class="text-xl font-semibold">{{ card.stats.total }}</dd>
-          <dt class="text-xs text-ink/70">{% translate "Total" %}{% if card.field.unit %} ({{ card.field.unit }}){% endif %}</dt>
+    <article class="card stat-card">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h2 class="text-base font-bold text-maroon">{{ card.field.label }}</h2>
+          <p class="mt-1 flex items-baseline gap-1.5">
+            <span class="stat-number">{{ card.stats.total }}</span>
+            <span class="text-xs text-ink/70">{% if card.field.unit %}{{ card.field.unit }} · {% endif %}{% translate "Total" %}</span>
+          </p>
         </div>
-        <div>
-          <dd class="text-xl font-semibold">{{ card.stats.daily_average }}</dd>
-          <dt class="text-xs text-ink/70">{% translate "Daily average" %}</dt>
+        <div class="progress-ring" title="{% translate 'Days filled' %}">
+          <svg viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="progress-ring-track" cx="18" cy="18" r="15.5" />
+            <circle class="progress-ring-value" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="{{ card.filled_pct }} 100" />
+          </svg>
+          <span class="progress-ring-label">{{ card.stats.days_filled }}<span class="text-ink/60">/{{ period.days }}</span></span>
         </div>
-        <div>
-          <dd class="text-xl font-semibold">{{ card.stats.days_filled }}</dd>
-          <dt class="text-xs text-ink/70">{% translate "Days filled" %}</dt>
+      </div>
+
+      {% if card.target_pct is not None %}
+        <div class="mt-3">
+          <div class="flex justify-between text-xs text-ink/70">
+            <span>{% translate "Daily average against target" %}</span>
+            <span><strong class="text-ink">{{ card.stats.daily_average }}</strong> / {{ card.field.target }}</span>
+          </div>
+          <div class="meter mt-1" role="img" aria-label="{{ card.target_pct }}%"><span style="width: {{ card.target_pct }}%"></span></div>
+        </div>
+      {% endif %}
+
+      <dl class="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div class="stat-tile">
+          <dd>{{ card.stats.daily_average }}</dd>
+          <dt>{% translate "Daily average" %}</dt>
+        </div>
+        <div class="stat-tile">
+          <dd>{{ card.stats.typical_day }}</dd>
+          <dt title="{% translate 'The middle value of the daily numbers, so one very long day does not move it.' %}">{% translate "Typical day" %}</dt>
+        </div>
+        <div class="stat-tile">
+          <dd>{{ card.stats.days_filled }}</dd>
+          <dt>{% translate "Days filled" %}</dt>
         </div>
       </dl>
+
       {% if card.streaks %}
-        <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-cream-dark pt-3 text-sm">
-          <div class="flex justify-between"><dt>🔥 {% translate "Current streak" %}</dt><dd class="font-semibold">{{ card.streaks.current }}</dd></div>
-          <div class="flex justify-between"><dt>{% translate "Longest" %}</dt><dd class="font-semibold">{{ card.streaks.longest }}</dd></div>
-          <div class="flex justify-between"><dt>⏱ {% translate "On-time current" %}</dt><dd class="font-semibold">{{ card.streaks.on_time_current }}</dd></div>
-          <div class="flex justify-between"><dt>{% translate "On-time longest" %}</dt><dd class="font-semibold">{{ card.streaks.on_time_longest }}</dd></div>
+        <dl class="mt-2 grid grid-cols-2 gap-2">
+          <div class="streak-tile">
+            <span class="text-2xl" aria-hidden="true">🔥</span>
+            <div class="min-w-0">
+              <dd class="streak-number">{{ card.streaks.current }}</dd>
+              <dt>{% translate "Current streak" %}</dt>
+              <p>{% translate "Longest" %}: <strong>{{ card.streaks.longest }}</strong></p>
+            </div>
+          </div>
+          <div class="streak-tile">
+            <span class="text-2xl" aria-hidden="true">⏱</span>
+            <div class="min-w-0">
+              <dd class="streak-number">{{ card.streaks.on_time_current }}</dd>
+              <dt>{% translate "On-time current" %}</dt>
+              <p>{% translate "On-time longest" %}: <strong>{{ card.streaks.on_time_longest }}</strong></p>
+            </div>
+          </div>
         </dl>
       {% endif %}
-    </div>
+    </article>
   {% empty %}
     <p class="card text-sm text-ink/70">{% translate "No fields are enabled for this devotee." %}</p>
   {% endfor %}
@@ -52,16 +96,16 @@
 
 {% if charts %}
 <section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
-  <h2 class="text-lg font-bold text-maroon">{% translate "Daily trend" %}</h2>
+  <h2 class="section-title">{% translate "Daily trend" %}</h2>
   {% include "partials/charts.html" %}
-  <p class="text-xs text-ink/60">{% translate "Tap a name in the legend to hide or show it. The same numbers are in the table below." %}</p>
+  <p class="text-xs text-ink/60">{% translate "Bars are each day; the line is the 7-day average. Gold bands are festival days. The same numbers are in the table below." %}</p>
 </section>
 {% endif %}
 
 {% if heat_field %}
 <section aria-label="{% translate 'Calendar' %}" class="mb-6">
   <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-    <h2 class="text-lg font-bold text-maroon">{% translate "Last 365 days" %}</h2>
+    <h2 class="section-title">{% translate "Last 365 days" %}</h2>
     <form method="get" class="flex items-center gap-2">
       {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
       <label for="heat" class="sr-only">{% translate "Field" %}</label>
@@ -90,6 +134,7 @@
     </div>
     <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ink/70">
       <span id="heat-detail" aria-live="polite">{% translate "Tap a day to see its value." %}</span>
+      {% if heat_top %}<span>{% blocktranslate with top=heat_top unit=heat_field.unit %}Darkest colour: {{ top }} {{ unit }} or more{% endblocktranslate %}</span>{% endif %}
       <span class="flex items-center gap-1">{% translate "Less" %}
         <span class="heat heat-0"></span><span class="heat heat-1"></span><span class="heat heat-2"></span><span class="heat heat-3"></span><span class="heat heat-4"></span>
         {% translate "More" %}</span>
@@ -100,7 +145,7 @@
 
 <section aria-label="{% translate 'Entries' %}">
   <div class="mb-2 flex items-center justify-between gap-2">
-    <h2 class="text-lg font-bold text-maroon">{% translate "Entries" %} <span class="text-sm font-normal text-ink/60">({{ rows|length }})</span></h2>
+    <h2 class="section-title">{% translate "Entries" %} <span class="text-sm font-normal text-ink/60">({{ rows|length }})</span></h2>
     {% url 'dashboard_export' person.pk as export_url %}{% include "partials/export_link.html" with url=export_url %}
   </div>
   {% if rows %}

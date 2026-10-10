@@ -1,0 +1,29 @@
+{% extends "manage/base.html" %}
+{% load i18n %}
+{% block manage %}
+<div class="mb-3 flex items-center justify-between gap-3">
+  <h1 class="text-xl font-bold text-maroon">{% translate "Festivals" %}</h1>
+  <a href="{% url 'manage_festival_add' %}" class="btn-primary !w-auto">{% translate "Add festival" %}</a>
+</div>
+<p class="mb-3 text-sm text-ink/70">{% translate "Festival days are highlighted on charts, and Analysis and Ranks can show regular days or festival days only. The entries themselves are never changed." %}</p>
+<ul class="space-y-3">
+  {% for festival in festivals %}
+    <li class="card">
+      <p class="font-serif text-lg font-bold">{{ festival.name }}</p>
+      <p class="text-sm text-ink/70">
+        {{ festival.start_date|date:"j M Y" }}{% if festival.end_date != festival.start_date %} – {{ festival.end_date|date:"j M Y" }}{% endif %}
+      </p>
+      {% if festival.notes %}<p class="mt-1 text-sm">{{ festival.notes|linebreaksbr }}</p>{% endif %}
+      <div class="mt-3 flex flex-wrap gap-2">
+        <a href="{% url 'manage_festival_edit' festival.pk %}" class="btn-secondary">{% translate "Edit" %}</a>
+        <form method="post" action="{% url 'manage_festival_delete' festival.pk %}" data-confirm="{% translate 'Delete this festival?' %}">
+          {% csrf_token %}
+          <button class="btn-secondary text-maroon">{% translate "Delete" %}</button>
+        </form>
+      </div>
+    </li>
+  {% empty %}
+    <li class="card text-sm text-ink/70">{% translate "No festivals have been added yet." %}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

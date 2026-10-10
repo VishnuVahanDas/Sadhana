@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AppSettings, EntryValue, SadhanaEntry, SadhanaField, UserFieldSetting
+from .models import AppSettings, EntryValue, Festival, SadhanaEntry, SadhanaField, UserFieldSetting
 
 
 @admin.register(SadhanaField)
@@ -40,3 +40,9 @@ class AppSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(Festival)
+class FestivalAdmin(admin.ModelAdmin):
+    list_display = ("name", "start_date", "end_date")
+    date_hierarchy = "start_date"

@@ -107,12 +107,13 @@ def test_field_and_period_filters(client, group):
     assert [field.key for field in response.context["fields"]] == ["hearing", "reading", "seva", "rounds", "mangala_arati"]
 
 
-def test_community_trend_is_two_single_series_charts(client, group):
+def test_community_trend_is_two_charts(client, group):
     client.force_login(group["solo"])
     charts = client.get(reverse("analysis")).context["charts"]
-    assert len(charts) == 2 and all(len(chart["datasets"]) == 1 for chart in charts)
-    assert charts[0]["datasets"][0]["data"][-2:] == [60, 240]
-    assert charts[1]["datasets"][0]["data"][-2:] == [15.0, 60.0]
+    assert [chart["title"] for chart in charts] == ["Hearing — Daily total", "Hearing — Daily average per person"]
+    assert charts[0]["values"][-2:] == [60, 240]
+    assert charts[1]["values"][-2:] == [15.0, 60.0]
+    assert charts[0]["average"][-1] == round(300 / 7, 1)
 
 
 def test_not_filled_today(client, group):

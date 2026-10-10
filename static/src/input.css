@@ -2,41 +2,324 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme colours as "R G B" channels, so Tailwind opacity modifiers (bg-saffron/40) keep working.
+   saffron = accent (buttons; saffron-ink is the text on it), maroon = brand colour for headings and badges,
+   gold = highlight, cream = page background, cream-dark = borders, ink = text, surface = cards and inputs,
+   bar = header and bottom nav (bar-ink is the text on it). */
+:root {
+  --c-saffron: 232 117 26;
+  --c-saffron-light: 246 199 156;
+  --c-saffron-dark: 199 95 14;
+  --c-maroon: 122 31 43;
+  --c-maroon-dark: 92 22 32;
+  --c-gold: 201 162 39;
+  --c-cream: 255 248 238;
+  --c-cream-dark: 243 230 208;
+  --c-ink: 43 33 24;
+  --c-bar: var(--c-maroon);
+  --c-bar-dark: var(--c-maroon-dark);
+  --c-bar-ink: var(--c-cream);
+  --c-surface: 255 255 255;
+  --c-saffron-ink: var(--c-ink);
+}
+
+/* Theme preview (temporary): alternatives picked from the superuser "Theme" dropdown, listed in
+   sadhana/themes.py. To finalise, copy the chosen block's values into :root and delete the rest. */
+[data-theme="kesari"] {
+  --c-saffron: 246 183 60;
+  --c-saffron-light: 252 227 172;
+  --c-saffron-dark: 219 154 30;
+  --c-maroon: 184 71 15;
+  --c-maroon-dark: 150 58 12;
+  --c-gold: 255 224 138;
+  --c-cream: 255 249 240;
+  --c-cream-dark: 243 227 204;
+  --c-ink: 43 33 24;
+}
+[data-theme="sunrise"] {
+  --c-saffron: 255 159 69;
+  --c-saffron-light: 255 221 184;
+  --c-saffron-dark: 240 132 34;
+  --c-maroon: 180 55 74;
+  --c-maroon-dark: 143 42 58;
+  --c-gold: 255 209 102;
+  --c-cream: 255 247 242;
+  --c-cream-dark: 247 225 213;
+  --c-ink: 45 27 27;
+}
+[data-theme="sandalwood"] {
+  --c-saffron: 217 164 65;
+  --c-saffron-light: 240 217 168;
+  --c-saffron-dark: 191 138 42;
+  --c-maroon: 91 58 33;
+  --c-maroon-dark: 69 43 24;
+  --c-gold: 232 200 114;
+  --c-cream: 251 246 236;
+  --c-cream-dark: 234 223 200;
+  --c-ink: 42 32 24;
+}
+[data-theme="govardhan"] {
+  --c-saffron: 233 169 59;
+  --c-saffron-light: 246 221 170;
+  --c-saffron-dark: 207 144 34;
+  --c-maroon: 74 93 35;
+  --c-maroon-dark: 55 70 26;
+  --c-gold: 235 203 107;
+  --c-cream: 248 248 239;
+  --c-cream-dark: 227 229 207;
+  --c-ink: 35 40 26;
+}
+[data-theme="tulsi"] {
+  --c-saffron: 240 160 48;
+  --c-saffron-light: 249 217 166;
+  --c-saffron-dark: 212 134 26;
+  --c-maroon: 31 77 58;
+  --c-maroon-dark: 22 58 43;
+  --c-gold: 227 197 103;
+  --c-cream: 246 248 241;
+  --c-cream-dark: 221 229 208;
+  --c-ink: 30 42 34;
+}
+[data-theme="peacock"] {
+  --c-saffron: 224 165 38;
+  --c-saffron-light: 245 223 166;
+  --c-saffron-dark: 196 140 20;
+  --c-maroon: 15 76 92;
+  --c-maroon-dark: 10 57 69;
+  --c-gold: 242 193 78;
+  --c-cream: 244 250 250;
+  --c-cream-dark: 213 230 232;
+  --c-ink: 22 40 45;
+}
+[data-theme="krishna"] {
+  --c-saffron: 242 178 51;
+  --c-saffron-light: 250 224 163;
+  --c-saffron-dark: 217 154 26;
+  --c-maroon: 30 47 107;
+  --c-maroon-dark: 22 35 82;
+  --c-gold: 245 207 107;
+  --c-cream: 245 247 252;
+  --c-cream-dark: 220 226 240;
+  --c-ink: 26 32 56;
+}
+[data-theme="royal"] {
+  --c-saffron: 230 177 58;
+  --c-saffron-light: 246 226 174;
+  --c-saffron-dark: 203 151 31;
+  --c-maroon: 75 42 123;
+  --c-maroon-dark: 57 31 94;
+  --c-gold: 240 203 106;
+  --c-cream: 249 246 253;
+  --c-cream-dark: 230 221 242;
+  --c-ink: 34 26 48;
+}
+[data-theme="lotus"] {
+  --c-saffron: 242 139 168;
+  --c-saffron-light: 250 208 220;
+  --c-saffron-dark: 224 108 144;
+  --c-maroon: 138 36 86;
+  --c-maroon-dark: 107 27 66;
+  --c-gold: 246 196 83;
+  --c-cream: 255 246 248;
+  --c-cream-dark: 243 220 227;
+  --c-ink: 46 26 34;
+}
+[data-theme="aurora"] {
+  --c-saffron: 251 191 36;
+  --c-saffron-light: 253 233 176;
+  --c-saffron-dark: 240 169 12;
+  --c-maroon: 79 70 229;
+  --c-maroon-dark: 63 55 201;
+  --c-gold: 253 230 138;
+  --c-cream: 247 247 253;
+  --c-cream-dark: 225 225 243;
+  --c-ink: 30 27 58;
+  --c-bar: 79 70 229;
+  --c-bar-dark: 147 51 234;
+  --c-bar-ink: 247 247 253;
+  --c-surface: 255 255 255;
+  --c-saffron-ink: 30 27 58;
+}
+[data-theme="jagannath"] {
+  --c-saffron: 250 204 21;
+  --c-saffron-light: 253 235 160;
+  --c-saffron-dark: 224 180 10;
+  --c-maroon: 185 28 28;
+  --c-maroon-dark: 143 21 21;
+  --c-gold: 253 224 71;
+  --c-cream: 255 251 242;
+  --c-cream-dark: 239 227 204;
+  --c-ink: 28 25 23;
+  --c-bar: 28 25 23;
+  --c-bar-dark: 12 10 9;
+  --c-bar-ink: 255 247 230;
+  --c-surface: 255 255 255;
+  --c-saffron-ink: 28 25 23;
+}
+[data-theme="slate"] {
+  --c-saffron: 245 158 11;
+  --c-saffron-light: 253 226 176;
+  --c-saffron-dark: 217 133 6;
+  --c-maroon: 36 48 63;
+  --c-maroon-dark: 25 34 45;
+  --c-gold: 251 191 36;
+  --c-cream: 247 248 250;
+  --c-cream-dark: 226 230 236;
+  --c-ink: 27 36 48;
+}
+[data-theme="midnight"] {
+  --c-saffron: 245 138 46;
+  --c-saffron-light: 74 46 23;
+  --c-saffron-dark: 217 115 26;
+  --c-maroon: 255 184 119;
+  --c-maroon-dark: 240 154 80;
+  --c-gold: 229 192 74;
+  --c-cream: 21 17 14;
+  --c-cream-dark: 54 44 36;
+  --c-ink: 244 236 226;
+  --c-bar: 31 24 20;
+  --c-bar-dark: 18 14 11;
+  --c-bar-ink: 251 239 224;
+  --c-surface: 33 26 21;
+  --c-saffron-ink: 27 18 10;
+  color-scheme: dark;
+}
+[data-theme="night"] {
+  --c-saffron: 242 178 51;
+  --c-saffron-light: 61 51 25;
+  --c-saffron-dark: 217 154 26;
+  --c-maroon: 157 183 255;
+  --c-maroon-dark: 127 156 240;
+  --c-gold: 245 207 107;
+  --c-cream: 14 18 32;
+  --c-cream-dark: 42 51 80;
+  --c-ink: 232 236 248;
+  --c-bar: 20 26 48;
+  --c-bar-dark: 11 15 30;
+  --c-bar-ink: 238 241 251;
+  --c-surface: 23 29 51;
+  --c-saffron-ink: 26 21 5;
+  color-scheme: dark;
+}
+[data-theme="emerald"] {
+  --c-saffron: 52 211 153;
+  --c-saffron-light: 18 61 46;
+  --c-saffron-dark: 16 185 129;
+  --c-maroon: 142 232 194;
+  --c-maroon-dark: 111 212 171;
+  --c-gold: 241 199 91;
+  --c-cream: 12 21 18;
+  --c-cream-dark: 37 56 47;
+  --c-ink: 230 242 236;
+  --c-bar: 18 32 26;
+  --c-bar-dark: 9 17 14;
+  --c-bar-ink: 233 245 239;
+  --c-surface: 20 33 27;
+  --c-saffron-ink: 5 36 26;
+  color-scheme: dark;
+}
+[data-theme="graphite"] {
+  --c-saffron: 167 139 250;
+  --c-saffron-light: 46 38 80;
+  --c-saffron-dark: 139 108 240;
+  --c-maroon: 201 184 255;
+  --c-maroon-dark: 176 155 245;
+  --c-gold: 240 199 94;
+  --c-cream: 17 17 20;
+  --c-cream-dark: 46 46 54;
+  --c-ink: 237 237 242;
+  --c-bar: 24 24 29;
+  --c-bar-dark: 12 12 16;
+  --c-bar-ink: 242 242 247;
+  --c-surface: 26 26 32;
+  --c-saffron-ink: 21 11 51;
+  color-scheme: dark;
+}
+
 @layer base {
   body {
-    @apply bg-cream text-ink font-sans antialiased;
+    @apply text-ink font-sans antialiased;
+    /* A soft glow of the accent colour behind the top of every page. */
+    background:
+      radial-gradient(900px 320px at 50% -80px, rgb(var(--c-saffron) / 0.14), transparent 70%) no-repeat,
+      rgb(var(--c-cream));
   }
   h1, h2, h3 {
     @apply font-serif;
+  }
+  ::selection {
+    background: rgb(var(--c-saffron) / 0.3);
   }
 }
 
 @layer components {
   .input {
-    @apply block w-full min-h-[48px] rounded-lg border border-cream-dark bg-white px-3 py-2 text-base text-ink
-      focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/40;
+    @apply block w-full min-h-[48px] rounded-xl border border-cream-dark bg-surface px-3 py-2 text-base text-ink
+      transition focus:border-saffron focus:outline-none focus:ring-4 focus:ring-saffron/25;
   }
   .btn-primary {
-    @apply inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-saffron px-4 py-2
-      text-base font-semibold text-ink shadow-sm hover:bg-saffron-dark focus:outline-none focus:ring-2 focus:ring-saffron/50;
+    @apply inline-flex min-h-[48px] w-full items-center justify-center rounded-xl px-4 py-2
+      text-base font-semibold text-saffron-ink transition hover:brightness-105 active:scale-[0.98]
+      focus:outline-none focus:ring-4 focus:ring-saffron/40;
+    background-image: linear-gradient(135deg, rgb(var(--c-saffron)), rgb(var(--c-saffron-dark)));
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 8px 18px -8px rgb(var(--c-saffron-dark) / 0.7);
   }
   .card {
-    @apply rounded-xl border border-cream-dark bg-white p-4 shadow-sm;
+    @apply rounded-2xl border border-cream-dark/70 bg-surface p-4;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 10px 28px -16px rgb(0 0 0 / 0.25);
+  }
+  /* Header and bottom nav share one gradient bar. */
+  .app-bar {
+    @apply text-bar-ink;
+    background-image: linear-gradient(135deg, rgb(var(--c-bar)), rgb(var(--c-bar-dark)));
+  }
+  .app-header {
+    view-transition-name: app-header;
+  }
+  .app-header::after {
+    content: "";
+    @apply absolute inset-x-0 bottom-0 h-px;
+    background: linear-gradient(90deg, transparent, rgb(var(--c-gold) / 0.8), transparent);
+  }
+  .app-nav {
+    view-transition-name: app-nav;
   }
   .nav-item {
-    @apply flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs text-cream/80;
+    @apply relative isolate flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs text-bar-ink/75
+      transition active:scale-95;
   }
   .nav-item-active {
     @apply font-semibold text-gold;
   }
-  .sheet-link {
-    @apply flex min-h-[48px] w-full items-center rounded-lg px-3 text-left text-base text-ink hover:bg-cream;
+  /* Pill behind the active icon. */
+  .nav-item-active::before {
+    content: "";
+    @apply absolute left-1/2 top-[5px] -z-10 h-7 w-12 -translate-x-1/2 rounded-full bg-bar-ink/15;
   }
-  /* Subtle lotus/mandala motif behind the login card. */
+  .sheet-link {
+    @apply flex min-h-[48px] w-full items-center rounded-xl px-3 text-left text-base text-ink hover:bg-cream;
+  }
+  /* Login page: soft aurora of the theme colours over a faint lotus/mandala ring pattern. */
   .mandala {
     background-image:
-      radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.22) 0, transparent 55%),
-      repeating-radial-gradient(circle at 50% 0%, rgba(232, 117, 26, 0.10) 0 2px, transparent 2px 26px);
+      radial-gradient(60% 45% at 12% 0%, rgb(var(--c-saffron) / 0.30), transparent 70%),
+      radial-gradient(55% 40% at 92% 8%, rgb(var(--c-gold) / 0.28), transparent 70%),
+      radial-gradient(70% 50% at 50% 112%, rgb(var(--c-maroon) / 0.22), transparent 70%),
+      repeating-radial-gradient(circle at 50% 0%, rgb(var(--c-saffron) / 0.07) 0 2px, transparent 2px 26px);
+  }
+  .glass {
+    background-color: rgb(var(--c-surface) / 0.78);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 24px 48px -24px rgb(0 0 0 / 0.35);
+  }
+  .logo-glow {
+    @apply relative isolate;
+  }
+  .logo-glow::before {
+    content: "";
+    @apply absolute -inset-4 -z-10 rounded-full;
+    background: radial-gradient(circle, rgb(var(--c-gold) / 0.55), transparent 68%);
   }
 }
 
@@ -46,15 +329,15 @@
   }
   .chip {
     @apply inline-flex min-h-[44px] min-w-[56px] items-center justify-center rounded-full border border-saffron
-      bg-cream px-3 text-sm font-semibold text-maroon active:bg-saffron-light;
+      bg-cream px-3 text-sm font-semibold text-maroon transition active:scale-95 active:bg-saffron-light;
   }
   .btn-secondary {
-    @apply inline-flex min-h-[44px] items-center justify-center rounded-lg border border-cream-dark bg-white px-4
-      text-sm font-medium text-ink hover:bg-cream disabled:opacity-40;
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-xl border border-cream-dark bg-surface px-4
+      text-sm font-medium text-ink shadow-sm transition hover:bg-cream active:scale-95 disabled:opacity-40;
   }
   .day-pill {
-    @apply flex min-h-[52px] flex-1 flex-col items-center justify-center rounded-lg border border-cream-dark bg-white
-      text-xs text-ink;
+    @apply flex min-h-[52px] flex-1 flex-col items-center justify-center rounded-xl border border-cream-dark bg-surface
+      text-xs text-ink transition active:scale-95;
   }
   .day-pill-filled {
     @apply border-gold bg-gold/20;
@@ -66,11 +349,13 @@
 
 @layer components {
   .tab {
-    @apply inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-cream-dark bg-white px-4
-      text-sm font-medium text-ink;
+    @apply inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-cream-dark bg-surface px-4
+      text-sm font-medium text-ink transition;
   }
   .tab-active {
-    @apply border-maroon bg-maroon text-cream;
+    @apply border-transparent text-cream;
+    background-image: linear-gradient(135deg, rgb(var(--c-maroon)), rgb(var(--c-maroon-dark)));
+    box-shadow: 0 6px 14px -8px rgb(var(--c-maroon-dark) / 0.8);
   }
   .badge {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
@@ -88,7 +373,7 @@
 .heatmap-month {
   font-size: 10px;
   line-height: 16px;
-  color: rgba(43, 33, 24, 0.7);
+  color: rgb(var(--c-ink) / 0.7);
   overflow: visible;
   white-space: nowrap;
 }
@@ -96,16 +381,16 @@
   display: inline-block;
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: 4px;
   padding: 0;
-  border: 1px solid rgba(43, 33, 24, 0.08);
+  border: 1px solid rgb(var(--c-ink) / 0.08);
 }
-/* cream -> light saffron -> saffron -> maroon */
-.heat-0 { background: #F3E6D0; }
-.heat-1 { background: #F6C79C; }
-.heat-2 { background: #EE9A55; }
-.heat-3 { background: #E8751A; }
-.heat-4 { background: #7A1F2B; }
+/* border colour -> light accent -> accent -> brand colour */
+.heat-0 { background: rgb(var(--c-cream-dark)); }
+.heat-1 { background: rgb(var(--c-saffron-light)); }
+.heat-2 { background: color-mix(in srgb, rgb(var(--c-saffron-light)), rgb(var(--c-saffron))); }
+.heat-3 { background: rgb(var(--c-saffron)); }
+.heat-4 { background: rgb(var(--c-maroon)); }
 
 @layer components {
   .sort-header {
@@ -121,9 +406,142 @@
     @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream-dark text-sm font-semibold;
   }
   .rank-top {
-    @apply bg-gold/30 text-xl;
+    @apply text-xl;
+    background-image: radial-gradient(circle at 30% 25%, rgb(var(--c-gold) / 0.55), rgb(var(--c-gold) / 0.2));
   }
   .rank-me {
     @apply bg-gold/15 ring-2 ring-inset ring-saffron;
+  }
+}
+
+/* Motion: pages cross-fade (header and nav stay put), the "More" sheet slides up, the login logo breathes. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  .sheet-panel {
+    animation: sheet-up 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .sheet-backdrop {
+    animation: fade-in 0.2s ease-out;
+  }
+  [data-toast] {
+    animation: toast-in 0.3s ease-out;
+  }
+  .logo-glow::before {
+    animation: glow 4s ease-in-out infinite;
+  }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes glow {
+  50% { opacity: 0.55; transform: scale(1.12); }
+}
+
+@layer components {
+  /* "Usual range / Full range" switch above a chart. */
+  .range-toggle {
+    @apply inline-flex min-h-[44px] items-center rounded-full border border-cream-dark bg-surface px-3 text-xs font-medium text-ink;
+  }
+  .range-toggle-active {
+    @apply border-maroon bg-maroon text-cream;
+  }
+}
+
+/* My Report (sample of the new look): profile banner, stat cards with a progress ring, streak tiles. */
+@layer components {
+  .hero {
+    @apply relative overflow-hidden rounded-3xl p-4 text-bar-ink;
+    background-image:
+      radial-gradient(120% 140% at 100% 0%, rgb(var(--c-saffron) / 0.55), transparent 55%),
+      linear-gradient(135deg, rgb(var(--c-bar)), rgb(var(--c-bar-dark)));
+    box-shadow: 0 16px 32px -18px rgb(var(--c-bar-dark) / 0.9);
+  }
+  .avatar {
+    @apply inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full font-serif text-2xl font-bold text-saffron-ink
+      ring-2 ring-bar-ink/40;
+    background-image: linear-gradient(135deg, rgb(var(--c-gold)), rgb(var(--c-saffron)));
+  }
+  .chip-row {
+    @apply -mx-4 flex gap-2 overflow-x-auto px-4 pb-1;
+    scrollbar-width: none;
+  }
+  .chip-row::-webkit-scrollbar {
+    display: none;
+  }
+  .section-title {
+    @apply flex items-center gap-2 text-lg font-bold text-maroon;
+  }
+  .section-title::before {
+    content: "";
+    @apply h-5 w-1.5 shrink-0 rounded-full;
+    background-image: linear-gradient(rgb(var(--c-saffron)), rgb(var(--c-gold)));
+  }
+  .stat-card {
+    @apply relative overflow-hidden;
+  }
+  /* Accent stripe along the top edge of each stat card. */
+  .stat-card::before {
+    content: "";
+    @apply absolute inset-x-0 top-0 h-1;
+    background-image: linear-gradient(90deg, rgb(var(--c-saffron)), rgb(var(--c-gold)));
+  }
+  .stat-number {
+    @apply text-4xl font-bold leading-none tracking-tight tabular-nums;
+  }
+  .stat-tile {
+    @apply rounded-xl bg-cream px-1 py-2;
+  }
+  .stat-tile dd {
+    @apply text-lg font-semibold tabular-nums;
+  }
+  .stat-tile dt {
+    @apply text-[11px] leading-tight text-ink/70;
+  }
+  .streak-tile {
+    @apply flex items-center gap-2 rounded-xl border border-gold/50 bg-gold/15 px-3 py-2;
+  }
+  .streak-tile dt, .streak-tile p {
+    @apply text-[11px] leading-tight text-ink/70;
+  }
+  .streak-tile p strong {
+    @apply text-ink;
+  }
+  .streak-number {
+    @apply text-xl font-bold leading-none tabular-nums;
+  }
+  .progress-ring {
+    @apply relative h-16 w-16 shrink-0;
+  }
+  .progress-ring svg {
+    @apply h-full w-full -rotate-90;
+  }
+  .progress-ring circle {
+    fill: none;
+    stroke-width: 3.5;
+  }
+  .progress-ring-track {
+    stroke: rgb(var(--c-cream-dark));
+  }
+  .progress-ring-value {
+    stroke: rgb(var(--c-saffron));
+    stroke-linecap: round;
+  }
+  .progress-ring-label {
+    @apply absolute inset-0 flex items-center justify-center text-sm font-semibold tabular-nums;
+  }
+  .meter {
+    @apply h-2 overflow-hidden rounded-full bg-cream-dark;
+  }
+  .meter span {
+    @apply block h-full rounded-full;
+    background-image: linear-gradient(90deg, rgb(var(--c-saffron)), rgb(var(--c-gold)));
   }
 }

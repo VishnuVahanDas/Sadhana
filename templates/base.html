@@ -1,9 +1,9 @@
 {% load static i18n %}<!DOCTYPE html>
-<html lang="{% get_current_language as LANGUAGE_CODE %}{{ LANGUAGE_CODE }}">
+<html lang="{% get_current_language as LANGUAGE_CODE %}{{ LANGUAGE_CODE }}" data-theme="{{ theme }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#7A1F2B">
+  <meta name="theme-color" content="{{ theme_color }}">
   <title>{% block title %}{{ site_title }}{% endblock %}</title>
   <link rel="icon" href="{% static 'img/logo.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,11 +14,13 @@
 <body class="min-h-screen">
 {% block body %}
   {% with show_nav=user.is_authenticated %}
-  <header class="sticky top-0 z-20 bg-maroon text-cream shadow">
+  <header class="app-bar app-header sticky top-0 z-20 shadow-md">
     <div class="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
-      <img src="{% static 'img/logo.png' %}" alt="" class="h-9 w-9">
-      <a href="{% url 'home' %}" class="flex min-h-[44px] items-center font-serif text-lg font-bold">{{ site_title }}</a>
-      <span class="ml-auto truncate text-sm text-cream/80">{{ user.display_name }}</span>
+      <img src="{% static 'img/logo.png' %}" alt="" class="h-9 w-9 drop-shadow">
+      <a href="{% url 'home' %}" class="flex min-h-[44px] items-center font-serif text-lg font-bold tracking-wide">{{ site_title }}</a>
+      {% if user.is_authenticated %}
+        <span class="ml-auto max-w-[45%] truncate rounded-full bg-bar-ink/10 px-3 py-1 text-sm text-bar-ink/90">{{ user.display_name }}</span>
+      {% endif %}
     </div>
   </header>
 

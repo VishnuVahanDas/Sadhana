@@ -1,0 +1,31 @@
+{% load i18n %}
+{# Period presets as tap-able chips; the custom range sits behind a disclosure. #}
+<div class="mb-4">
+  <form method="get" class="chip-row" aria-label="{% translate 'Period' %}">
+    {% for name, value in keep.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    {% for key, label in presets %}
+      {% if key != "custom" %}
+        <button type="submit" name="period" value="{{ key }}" class="tab {% if key == period.key %}tab-active{% endif %}" {% if key == period.key %}aria-current="true"{% endif %}>{{ label }}</button>
+      {% endif %}
+    {% endfor %}
+  </form>
+  <details class="mt-2" {% if period.key == "custom" %}open{% endif %}>
+    <summary class="inline-flex min-h-[44px] cursor-pointer items-center gap-1 text-sm font-medium text-maroon">
+      {% translate "Custom range" %}
+      <span class="text-xs font-normal text-ink/60">· {{ period.start|date:"j M Y" }} – {{ period.end|date:"j M Y" }} · {% blocktranslate count days=period.days %}{{ days }} day{% plural %}{{ days }} days{% endblocktranslate %}</span>
+    </summary>
+    <form method="get" class="card mt-1 grid grid-cols-2 gap-3">
+      {% for name, value in keep.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <input type="hidden" name="period" value="custom">
+      <div>
+        <label for="start" class="mb-1 block text-sm font-medium">{% translate "From" %}</label>
+        <input id="start" type="date" name="start" class="input" value="{{ period.start|date:'Y-m-d' }}">
+      </div>
+      <div>
+        <label for="end" class="mb-1 block text-sm font-medium">{% translate "To" %}</label>
+        <input id="end" type="date" name="end" class="input" value="{{ period.end|date:'Y-m-d' }}">
+      </div>
+      <button type="submit" class="btn-primary col-span-2">{% translate "Show" %}</button>
+    </form>
+  </details>
+</div>

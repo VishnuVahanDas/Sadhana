@@ -26,7 +26,7 @@
       {% endfor %}
     </select>
   </div>
-  <div class="col-span-2">
+  <div>
     <label for="coordinator" class="mb-1 block text-sm font-medium">{% translate "Group" %}</label>
     <select id="coordinator" name="coordinator" class="input" data-autosubmit>
       <option value="">{% translate "All devotees" %}</option>
@@ -35,12 +35,20 @@
       {% endfor %}
     </select>
   </div>
+  <div>
+    <label for="days" class="mb-1 block text-sm font-medium">{% translate "Days" %}</label>
+    <select id="days" name="days" class="input" data-autosubmit {% if not option.uses_period %}disabled{% endif %}>
+      {% for key, label in day_filters %}
+        <option value="{{ key }}" {% if key == days_key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
 </form>
 
 {% if option.uses_period %}
   {% include "partials/period_picker.html" %}
 {% else %}
-  <p class="mb-4 text-xs text-ink/70">{% translate "Streaks are live and all-time, so no period applies." %}</p>
+  <p class="mb-4 text-xs text-ink/70">{% translate "Streaks are live and all-time, so no period applies and festival days always count." %}</p>
 {% endif %}
 
 {# Mobile: cards #}

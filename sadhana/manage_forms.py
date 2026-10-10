@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.forms import StyledFormMixin
 
-from .models import AppSettings, SadhanaField
+from .models import AppSettings, Festival, SadhanaField
 
 FieldType = SadhanaField.FieldType
 MEASURABLE = (FieldType.MINUTES, FieldType.COUNT, FieldType.BOOLEAN)
@@ -15,7 +15,7 @@ class SadhanaFieldForm(StyledFormMixin, forms.ModelForm):
         model = SadhanaField
         fields = [
             "label", "key", "field_type", "unit", "min_value", "max_value",
-            "has_streak", "is_rankable", "is_active", "enabled_by_default", "help_text",
+            "has_streak", "is_rankable", "is_active", "enabled_by_default", "help_text", "target",
         ]
         labels = {
             "has_streak": _("Count streaks for this field"),
@@ -67,3 +67,21 @@ class AppSettingsForm(StyledFormMixin, forms.ModelForm):
         if hour > 23:
             raise ValidationError(_("Enter an hour between 0 and 23."))
         return hour
+
+
+class FestivalForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Festival
+        fields = ["name", "start_date", "end_date", "notes"]
+        widgets = {
+            "start_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+            "end_date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get("start_date"), cleaned.get("end_date")
+        if start and end and end < start:
+            self.add_error("end_date", _("The end date cannot be before the start date."))
+        return cleaned

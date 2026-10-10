@@ -6,6 +6,7 @@
 <nav class="mb-4 flex gap-1 overflow-x-auto" aria-label="{% translate 'Manage' %}">
   <a href="{% url 'manage_users' %}" class="tab {% if 'manage_user' in current %}tab-active{% endif %}">{% translate "Users" %}</a>
   <a href="{% url 'manage_fields' %}" class="tab {% if 'manage_field' in current %}tab-active{% endif %}">{% translate "Fields" %}</a>
+  <a href="{% url 'manage_festivals' %}" class="tab {% if 'manage_festival' in current %}tab-active{% endif %}">{% translate "Festivals" %}</a>
   <a href="{% url 'manage_settings' %}" class="tab {% if current == 'manage_settings' %}tab-active{% endif %}">{% translate "Settings" %}</a>
   <a href="{% url 'manage_audit' %}" class="tab {% if current == 'manage_audit' %}tab-active{% endif %}">{% translate "Audit log" %}</a>
 </nav>

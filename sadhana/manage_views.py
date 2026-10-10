@@ -4,14 +4,16 @@ from django.db import transaction
 from django.db.models import Exists, Max, OuterRef
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.decorators import superuser_required
 from audit import services as audit
 from audit.models import AuditLog
 
-from .manage_forms import AppSettingsForm, SadhanaFieldForm
-from .models import AppSettings, EntryValue, SadhanaField, UserFieldSetting
+from .manage_forms import AppSettingsForm, FestivalForm, SadhanaFieldForm
+from . import themes
+from .models import AppSettings, EntryValue, Festival, SadhanaField, UserFieldSetting
 
 Action = AuditLog.Action
 
@@ -168,3 +170,66 @@ def app_settings(request):
         messages.success(request, _("Settings have been saved."))
         return redirect("manage_settings")
     return render(request, "manage/settings.html", {"form": form})
+
+
+@superuser_required
+@require_POST
+def set_theme(request):
+    """Temporary theme preview: the superuser's choice becomes the theme for everyone."""
+    settings = AppSettings.load()
+    theme = request.POST.get("theme")
+    if themes.header_color(theme) and theme != settings.theme:
+        audit.log(
+            Action.SETTINGS_UPDATE, request.user, field_key="theme",
+            old_value=settings.theme, new_value=theme, ip=audit.get_client_ip(request),
+        )
+        settings.theme = theme
+        settings.save(update_fields=["theme"])
+    back = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(back, allowed_hosts={request.get_host()}):
+        back = "home"
+    return redirect(back)
+
+
+# --- Festivals ------------------------------------------------------------
+
+
+def _festival_text(festival):
+    return f"{festival.name} ({festival.start_date} to {festival.end_date})"
+
+
+@superuser_required
+def festival_list(request):
+    return render(request, "manage/festival_list.html", {"festivals": Festival.objects.all()})
+
+
+@superuser_required
+def festival_edit(request, pk=None):
+    festival = get_object_or_404(Festival, pk=pk) if pk else None
+    form = FestivalForm(request.POST or None, instance=festival)
+    before = {name: getattr(festival, name) for name in form.fields} if festival else {}
+    if request.method == "POST" and form.is_valid():
+        saved = form.save()
+        if festival:
+            _log_changes(request, Action.FESTIVAL_UPDATE, form, before, field_key=f"festival:{saved.pk}")
+        else:
+            audit.log(
+                Action.FESTIVAL_CREATE, request.user, field_key=f"festival:{saved.pk}",
+                new_value=_festival_text(saved), ip=audit.get_client_ip(request),
+            )
+        messages.success(request, _("“%(name)s” has been saved.") % {"name": saved.name})
+        return redirect("manage_festivals")
+    return render(request, "manage/festival_form.html", {"form": form, "festival": festival})
+
+
+@superuser_required
+@require_POST
+def festival_delete(request, pk):
+    festival = get_object_or_404(Festival, pk=pk)
+    audit.log(
+        Action.FESTIVAL_DELETE, request.user, field_key=f"festival:{festival.pk}",
+        old_value=_festival_text(festival), ip=audit.get_client_ip(request),
+    )
+    festival.delete()
+    messages.success(request, _("“%(name)s” has been deleted.") % {"name": festival.name})
+    return redirect("manage_festivals")

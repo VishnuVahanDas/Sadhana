@@ -3,12 +3,30 @@ module.exports = {
   content: ["./templates/**/*.html", "./*/forms.py", "./static/js/*.js"],
   theme: {
     extend: {
+      // Colours come from CSS variables (static/src/input.css) so a theme can swap them.
       colors: {
-        saffron: { DEFAULT: "#E8751A", light: "#F6C79C", dark: "#C75F0E" },
-        maroon: { DEFAULT: "#7A1F2B", dark: "#5C1620" },
-        gold: "#C9A227",
-        cream: { DEFAULT: "#FFF8EE", dark: "#F3E6D0" },
-        ink: "#2B2118",
+        saffron: {
+          DEFAULT: "rgb(var(--c-saffron) / <alpha-value>)",
+          light: "rgb(var(--c-saffron-light) / <alpha-value>)",
+          dark: "rgb(var(--c-saffron-dark) / <alpha-value>)",
+          ink: "rgb(var(--c-saffron-ink) / <alpha-value>)",
+        },
+        maroon: {
+          DEFAULT: "rgb(var(--c-maroon) / <alpha-value>)",
+          dark: "rgb(var(--c-maroon-dark) / <alpha-value>)",
+        },
+        gold: "rgb(var(--c-gold) / <alpha-value>)",
+        cream: {
+          DEFAULT: "rgb(var(--c-cream) / <alpha-value>)",
+          dark: "rgb(var(--c-cream-dark) / <alpha-value>)",
+        },
+        ink: "rgb(var(--c-ink) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        bar: {
+          DEFAULT: "rgb(var(--c-bar) / <alpha-value>)",
+          dark: "rgb(var(--c-bar-dark) / <alpha-value>)",
+          ink: "rgb(var(--c-bar-ink) / <alpha-value>)",
+        },
       },
       fontFamily: {
         sans: ['"Noto Sans"', '"Noto Sans Devanagari"', "system-ui", "sans-serif"],

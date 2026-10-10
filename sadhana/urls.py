@@ -16,4 +16,9 @@ urlpatterns = [
     path("manage/fields/<int:pk>/apply/", manage_views.field_apply_to_all, name="manage_field_apply"),
     path("manage/fields/<int:pk>/delete/", manage_views.field_delete, name="manage_field_delete"),
     path("manage/settings/", manage_views.app_settings, name="manage_settings"),
+    path("manage/festivals/", manage_views.festival_list, name="manage_festivals"),
+    path("manage/festivals/add/", manage_views.festival_edit, name="manage_festival_add"),
+    path("manage/festivals/<int:pk>/", manage_views.festival_edit, name="manage_festival_edit"),
+    path("manage/festivals/<int:pk>/delete/", manage_views.festival_delete, name="manage_festival_delete"),
+    path("manage/theme/", manage_views.set_theme, name="manage_theme"),
 ]

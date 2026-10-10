@@ -56,6 +56,7 @@ def test_summary_cards(client, filled, today):
     cards = {card["field"].key: card for card in response.context["cards"]}
     assert list(cards) == ["hearing", "reading", "seva", "rounds"]  # rankable fields only: no notes
     assert (cards["hearing"]["stats"].total, cards["hearing"]["stats"].days_filled) == (135, 3)
+    assert "Typical day" in response.content.decode()
     assert cards["hearing"]["streaks"].current == 2 and cards["hearing"]["streaks"].longest == 2
     assert cards["hearing"]["streaks"].on_time_current == 2
     assert cards["rounds"]["stats"].total == 40
@@ -78,21 +79,23 @@ def test_period_selection(client, filled):
     assert "No entries in this period." in custom.content.decode()
 
 
-def test_charts_never_mix_units(client, filled):
+def test_one_chart_per_numeric_field(client, filled):
     client.force_login(filled)
     response = page(client, filled)
     charts = response.context["charts"]
-    assert [[series["label"] for series in chart["datasets"]] for chart in charts] == [
-        ["Hearing", "Book Reading", "Seva"],
-        ["Rounds"],
-    ]
-    assert [chart["unit"] for chart in charts] == ["min", "rounds"]
-    assert charts[0]["datasets"][0]["data"][-4:] == [45, 0, 60, 30]
-    assert len(charts[0]["labels"]) == 7
-    # The data reaches the page as JSON for Chart.js.
+    # Each field has its own chart and axis, so a spike in one never squashes another.
+    assert [chart["title"] for chart in charts] == ["Hearing", "Book Reading", "Seva", "Rounds"]
+    assert [chart["unit"] for chart in charts] == ["min", "min", "min", "rounds"]
+    hearing = charts[0]
+    assert hearing["values"][-4:] == [45, 0, 60, 30]
+    assert len(hearing["labels"]) == len(hearing["values"]) == len(hearing["average"]) == 7
+    assert hearing["average"][-1] == round((45 + 60 + 30) / 7, 1)
+    # Only three days of data: too few for a "usual range", so the full range is used.
+    assert hearing["cap"] is None and hearing["clipped"] == []
     html = response.content.decode()
+    assert "Usual range" not in html
     embedded = html.split('<script id="chart-data" type="application/json">')[1].split("</script>")[0]
-    assert json.loads(embedded)[1]["datasets"][0]["data"][-1] == 16
+    assert json.loads(embedded)[3]["values"][-1] == 16
     assert "chart.umd.min.js" in html
 
 

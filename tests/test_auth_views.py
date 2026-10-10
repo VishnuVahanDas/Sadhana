@@ -89,3 +89,30 @@ def test_manage_links_only_for_superusers(client, make_user):
     html = client.get(reverse("home")).content.decode()
     for name in ["manage_users", "manage_fields", "manage_settings", "manage_audit"]:
         assert reverse(name) in html
+
+
+def test_theme_dropdown_only_for_superusers(client, make_user):
+    client.force_login(make_user())
+    assert 'id="theme-select"' not in client.get(reverse("devotees")).content.decode()
+    client.force_login(make_user(email="admin@example.com", is_superuser=True))
+    assert 'id="theme-select"' in client.get(reverse("devotees")).content.decode()
+
+
+def test_superuser_theme_choice_applies_to_everyone(client, make_user):
+    devotee = make_user()
+    admin = make_user(email="admin@example.com", is_superuser=True)
+    page, change = reverse("devotees"), reverse("manage_theme")
+
+    client.force_login(devotee)
+    assert 'data-theme="saffron"' in client.get(page).content.decode()
+    assert client.post(change, {"theme": "peacock"}).status_code == 403
+
+    client.force_login(admin)
+    response = client.post(change, {"theme": "peacock", "next": page})
+    assert response.status_code == 302 and response.url == page
+    assert client.post(change, {"theme": "no-such-theme", "next": "https://evil.example/"}).url == reverse("home")
+
+    client.force_login(devotee)
+    assert 'data-theme="peacock"' in client.get(page).content.decode()
+    client.logout()
+    assert 'data-theme="peacock"' in client.get(reverse("login")).content.decode()
