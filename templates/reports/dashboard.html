@@ -35,7 +35,7 @@
   {% for item in compare.fields %}
     <article class="card">
       <h3 class="mb-2 text-base font-bold text-maroon">{{ item.field.label }}{% if item.field.unit %} <span class="font-sans text-xs font-normal text-ink/60">({{ item.field.unit }})</span>{% endif %}</h3>
-      <div class="overflow-x-auto">
+      <div class="relative overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead class="text-xs uppercase tracking-wide text-ink/60">
             <tr>
@@ -197,7 +197,7 @@
     {% url 'dashboard_export' person.pk as export_url %}{% include "partials/export_link.html" with url=export_url %}
   </div>
   {% if rows %}
-    <div class="card overflow-x-auto !p-0">
+    <div class="card relative overflow-x-auto !p-0">
       <table class="w-full text-left text-sm">
         <thead class="bg-cream-dark/60 text-xs uppercase tracking-wide text-ink/70">
           <tr>
