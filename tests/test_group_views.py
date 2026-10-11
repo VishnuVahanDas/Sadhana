@@ -208,3 +208,73 @@ def test_dashboard_export(client, group, today):
     # The page links to the export with the current filters.
     page = client.get(reverse("dashboard", args=[group["madhava"].pk]), {"period": "last_30"}).content.decode()
     assert f"{reverse('dashboard_export', args=[group['madhava'].pk])}?period=last_30" in page
+
+
+# --- Sheet ----------------------------------------------------------------
+
+
+def test_sheet_lists_every_active_devotee_with_the_core_fields(client, group, today):
+    assert client.get(reverse("sheet")).status_code == 302  # login required
+    client.force_login(group["solo"])
+    response = client.get(reverse("sheet"), {"period": "last_7"})
+    assert [field.key for field in response.context["fields"]] == ["hearing", "reading", "seva", "rounds"]
+    rows = {row["user"].display_name: row for row in response.context["rows"]}
+    assert list(rows) == ["Arjuna", "Bhima", "Madhava Das", "Solo"]  # by name; no inactive devotees
+    assert rows["Madhava Das"]["cells"] == [90, 0, 0, 32] and rows["Madhava Das"]["days_filled"] == 2
+    assert response.context["footer"] == [300, 0, 0, 60]
+    html = response.content.decode()
+    assert "Group total" in html and "sheet-me" in html and reverse("sheet") in html
+
+
+def test_sheet_single_day_and_group(client, group, today):
+    client.force_login(group["solo"])
+    day = {"period": "custom", "start": today.isoformat(), "end": today.isoformat()}
+    response = client.get(reverse("sheet"), day)
+    rows = {row["user"].display_name: row["cells"] for row in response.context["rows"]}
+    assert rows == {"Arjuna": [90, 0, 0, 16], "Bhima": [0, 0, 0, 0], "Madhava Das": [60, 0, 0, 16], "Solo": [90, 0, 0, 4]}
+    assert [link["active"] for link in response.context["day_links"]] == [True, False]
+
+    team = client.get(reverse("sheet"), {**day, "coordinator": group["madhava"].pk})
+    assert [row["user"].display_name for row in team.context["rows"]] == ["Arjuna", "Bhima", "Madhava Das"]
+
+
+
+def test_sheet_daily_shows_each_day_of_the_range(client, group, today):
+    from datetime import timedelta as delta
+
+    from sadhana.models import Festival
+
+    Festival.objects.create(name="Test Utsava", start_date=today, end_date=today)
+    client.force_login(group["solo"])
+    response = client.get(reverse("sheet"), {"period": "last_7", "show": "daily"})
+    days = [day["date"] for day in response.context["days"]]
+    assert days == [today - delta(days=offset) for offset in range(7)]  # newest first
+    assert response.context["days"][0]["festivals"] == ["Test Utsava"] and response.context["hidden_days"] == 0
+    rows = {row["user"].display_name: row["days"] for row in response.context["rows"]}
+    assert rows["Madhava Das"][0] == [60, None, None, 16] and rows["Madhava Das"][1] == [30, None, None, 16]
+    assert rows["Bhima"][0] == [None, None, None, None] and rows["Bhima"][1] == [30, None, None, 8]
+    assert response.context["footer"][0] == [240, 0, 0, 36] and response.context["footer"][1] == [60, 0, 0, 24]
+    html = response.content.decode()
+    assert "Test Utsava" in html and "sheet-daily" in html and "data-sortable" not in html
+
+    # Long ranges show the latest 31 days on screen; the export has them all.
+    start = today - delta(days=39)
+    long_range = {"period": "custom", "start": start.isoformat(), "end": today.isoformat(), "show": "daily"}
+    response = client.get(reverse("sheet"), long_range)
+    assert len(response.context["days"]) == 31 and response.context["hidden_days"] == 9
+    rows = sheet_rows(client.get(reverse("sheet_export"), long_range))
+    header = next(row for row in rows if row[0] == "Name")
+    assert len(header) == 2 + 40 * 4 and header[2] == f"{today:%a %d %b} · Hearing (min)"
+    madhava = next(row for row in rows if row[0] == "Madhava Das")
+    assert madhava[2:6] == [60, None, None, 16]
+    assert rows[-1][0] == "Group total" and rows[-1][2] == 240
+
+
+def test_sheet_export(client, group, today):
+    client.force_login(group["solo"])
+    rows = sheet_rows(client.get(reverse("sheet_export"), {"period": "last_7"}))
+    header = next(index for index, row in enumerate(rows) if row[0] == "Name")
+    assert rows[header] == ["Name", "Coordinator", "Hearing (min)", "Book Reading (min)", "Seva (min)", "Rounds (rounds)", "Days filled"]
+    assert rows[header + 3] == ["Madhava Das", None, 90, 0, 0, 32, 2]
+    assert rows[-1][0] == "Group total" and rows[-1][2] == 300
+

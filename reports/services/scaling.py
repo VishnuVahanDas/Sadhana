@@ -6,7 +6,7 @@ day, so charts and the heatmap are scaled to the usual range instead and the
 exceptional days are drawn clipped, with their real value shown.
 """
 
-from math import floor, log10
+from math import ceil, floor, log10
 
 PERCENTILE = 90
 HEADROOM = 1.2
@@ -85,3 +85,53 @@ def median(values):
     if len(ordered) % 2:
         return ordered[middle]
     return round((ordered[middle - 1] + ordered[middle]) / 2, 1)
+
+
+SHADE_LEVELS = 4
+
+
+def daily_top(values, steps=MINUTE_STEPS, floor=None):
+    """The value that gets the darkest shade in a column of daily values.
+
+    The "usual range" cap when there is one, so a festival day is darkest without
+    washing out every normal day; otherwise simply the largest value.
+    """
+    cap = usual_cap(values, steps, floor)
+    if cap is not None:
+        return cap
+    return max((value for value in values if value), default=0)
+
+
+def relative_top(values):
+    """The darkest-shade value for a column that compares people (totals, averages).
+
+    With seven or more non-zero values it is the 90th percentile × 1.2 (never
+    above the largest value), so one exceptional devotee does not turn everyone
+    else pale; with fewer it is the largest value.
+    """
+    nonzero = [value for value in values if value and value > 0]
+    if not nonzero:
+        return 0
+    if len(nonzero) < MIN_DAYS:
+        return max(nonzero)
+    return min(max(nonzero), round(percentile(nonzero, PERCENTILE) * HEADROOM, 6))
+
+
+def shade_level(value, top, levels=SHADE_LEVELS):
+    """Shade for a table cell: None = nothing entered (no shade), 0 = an entered zero, then 1..levels.
+
+    Yes/no values: yes is the darkest shade.
+    """
+    if value is None:
+        return None
+    if value is True:
+        return levels
+    if not value or value <= 0:
+        return 0
+    if not top:
+        return levels
+    return min(levels, ceil(value / top * levels))
+
+
+def shade_column(values, top):
+    return [shade_level(value, top) for value in values]

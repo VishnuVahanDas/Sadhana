@@ -180,7 +180,7 @@ def test_analysis_comparison(client, two_weeks, today):
     # This week: 420 + 120 = 540; the week before: 210.
     assert (summary["Total"].current, summary["Total"].previous, summary["Total"].direction) == (540, 210, "up")
     assert summary["Average per person"].current == 270.0 and summary["Average per person"].previous == 105.0
-    table = {row.user.display_name: change for row, change in response.context["table"]}
+    table = {row.user.display_name: change for row, change, *_levels in response.context["table"]}
     assert (table["Arjuna"].current, table["Arjuna"].previous, table["Arjuna"].percent) == (60.0, 30.0, 100)
     # Bhima had not joined: "—", not a drop from zero.
     assert table["Bhima"].previous is None and table["Bhima"].direction is None
@@ -213,7 +213,7 @@ def test_days_filter_applies_to_both_periods(client, two_weeks, today):
     total = next(item["change"] for item in response.context["compare"]["summary"] if str(item["label"]) == "Total")
     # The festival day (30 minutes) drops out of the previous week only.
     assert (total.current, total.previous) == (540, 180)
-    table = {row.user.display_name: change for row, change in response.context["table"]}
+    table = {row.user.display_name: change for row, change, *_levels in response.context["table"]}
     assert table["Arjuna"].previous == 30.0  # 180 over the 6 regular days
 
 

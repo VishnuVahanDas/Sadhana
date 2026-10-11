@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Sheet" %} · {{ site_title }}{% endblock %}
+{% block content %}
+<a href="{% url 'analysis' %}" class="mb-1 inline-flex min-h-[44px] items-center gap-1 text-sm font-medium text-maroon">
+  <span aria-hidden="true" class="text-lg leading-none">‹</span> {% translate "Back to Analysis" %}
+</a>
+<div class="mb-3 flex items-center justify-between gap-2">
+  <h1 class="section-title !text-2xl">{% translate "Sheet" %}</h1>
+  {% url 'sheet_export' as export_url %}{% include "partials/export_link.html" with url=export_url %}
+</div>
+
+<form method="get" class="card mb-3 grid grid-cols-2 gap-3">
+  {% for name, value in period.query.items %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+  <div>
+    <label for="coordinator" class="mb-1 block text-sm font-medium">{% translate "Group" %}</label>
+    <select id="coordinator" name="coordinator" class="input" data-autosubmit>
+      <option value="">{% translate "All devotees" %}</option>
+      {% for person in coordinators %}
+        <option value="{{ person.pk }}" {% if person == coordinator %}selected{% endif %}>{{ person.display_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="show" class="mb-1 block text-sm font-medium">{% translate "Show" %}</label>
+    <select id="show" name="show" class="input" data-autosubmit>
+      {% for key, label in shows %}
+        <option value="{{ key }}" {% if key == show %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="chip-row mb-2" role="group" aria-label="{% translate 'Single day' %}">
+  {% for link in day_links %}
+    <a href="{{ link.url }}" class="tab {% if link.active %}tab-active{% endif %}" {% if link.active %}aria-current="true"{% endif %}>{{ link.label }}</a>
+  {% endfor %}
+</div>
+{% include "partials/period_chips.html" %}
+
+{% if show == "daily" %}
+<div class="card overflow-x-auto !p-0">
+  <table class="sheet sheet-daily w-full text-left text-sm">
+    <thead class="bg-cream-dark/60 text-xs text-ink/70">
+      <tr>
+        <th rowspan="2" class="sheet-name uppercase tracking-wide">{% translate "Name" %}</th>
+        {% for day in days %}
+          <th colspan="{{ fields|length }}" class="sheet-day whitespace-nowrap px-3 pt-2 text-center text-sm font-bold text-ink {% if day.festivals %}sheet-festival{% endif %}"{% if day.festivals %} title="{{ day.festivals|join:', ' }}"{% endif %}>
+            {{ day.date|date:"D j M" }}{% if day.festivals %} <span class="font-normal">· {{ day.festivals|join:", " }}</span>{% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for day in days %}
+          {% for field in fields %}
+            <th class="whitespace-nowrap px-2 pb-2 text-right font-medium {% if forloop.first %}sheet-day{% endif %}">{{ field.label }}</th>
+          {% endfor %}
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-cream-dark">
+      {% for row in rows %}
+        <tr {% if row.user == user %}class="sheet-me"{% endif %}>
+          <td class="sheet-name font-medium"><a class="inline-flex min-h-[44px] items-center underline" href="{% url 'dashboard' row.user.pk %}">{{ row.user.display_name }}</a></td>
+          {% for day in row.shaded_days %}
+            {% for value, level in day %}
+              <td class="px-2 py-2 text-right tabular-nums {% if forloop.first %}sheet-day{% endif %} {% if value is None %}text-ink/30{% else %}font-semibold shade-{{ level }}{% endif %}">{% if value is None %}–{% else %}{{ value }}{% endif %}</td>
+            {% endfor %}
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if rows %}
+      <tfoot class="border-t-2 border-cream-dark bg-cream-dark/40 font-bold">
+        <tr>
+          <td class="sheet-name">{% translate "Group total" %}</td>
+          {% for day in footer %}
+            {% for value in day %}<td class="px-2 py-3 text-right tabular-nums {% if forloop.first %}sheet-day{% endif %}">{{ value }}</td>{% endfor %}
+          {% endfor %}
+        </tr>
+      </tfoot>
+    {% endif %}
+  </table>
+</div>
+<p class="mt-1 text-xs text-ink/60">
+  {% translate "Newest day first. Swipe sideways to see earlier days; – means nothing was entered." %}
+  {% if hidden_days %}{% blocktranslate count days=hidden_days %}{{ days }} earlier day is not shown here; the Excel download has every day.{% plural %}{{ days }} earlier days are not shown here; the Excel download has every day.{% endblocktranslate %}{% endif %}
+</p>
+{% else %}
+<div class="card overflow-x-auto !p-0">
+  <table class="sheet w-full text-left text-sm" data-sortable>
+    <thead class="bg-cream-dark/60 text-xs uppercase tracking-wide text-ink/70">
+      <tr>
+        <th class="sort-header sheet-name" data-sort="text" aria-sort="ascending">{% translate "Name" %}</th>
+        {% for field in fields %}
+          <th class="sort-header text-right" data-sort="number">{{ field.label }}{% if field.unit %} <span class="font-normal normal-case">({{ field.unit }})</span>{% endif %}</th>
+        {% endfor %}
+        <th class="sort-header text-right" data-sort="number">{% translate "Days filled" %}</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-cream-dark">
+      {% for row in rows %}
+        <tr {% if row.user == user %}class="sheet-me"{% endif %}>
+          <td class="sheet-name font-medium"><a class="inline-flex min-h-[44px] items-center underline" href="{% url 'dashboard' row.user.pk %}">{{ row.user.display_name }}</a></td>
+          {% for cell, level in row.shaded %}
+            <td class="px-3 py-2 text-right tabular-nums shade-{{ level }} {% if cell %}font-semibold{% endif %}">{{ cell }}</td>
+          {% endfor %}
+          <td class="px-3 py-2 text-right tabular-nums {% if not row.days_filled %}text-ink/40{% endif %}">{{ row.days_filled }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="{{ fields|length|add:2 }}" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if rows %}
+      <tfoot class="border-t-2 border-cream-dark bg-cream-dark/40 font-bold">
+        <tr>
+          <td class="sheet-name">{% translate "Group total" %}</td>
+          {% for value in footer %}<td class="px-3 py-3 text-right tabular-nums">{{ value }}</td>{% endfor %}
+          <td></td>
+        </tr>
+      </tfoot>
+    {% endif %}
+  </table>
+</div>
+<p class="mt-1 text-xs text-ink/60">{% translate "Tap a column heading to sort. Swipe sideways to see every column." %}</p>
+{% endif %}
+{% endblock %}

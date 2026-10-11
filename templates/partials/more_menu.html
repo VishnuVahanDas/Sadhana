@@ -4,6 +4,7 @@
   <div class="sheet-panel absolute inset-x-0 bottom-0 mx-auto max-w-3xl rounded-t-3xl bg-surface p-4 pb-[calc(88px+env(safe-area-inset-bottom))] shadow-2xl">
     <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-cream-dark" aria-hidden="true"></div>
     <p class="mb-2 px-3 font-serif text-lg font-bold text-maroon">{{ user.display_name }}</p>
+    <a href="{% url 'sheet' %}" class="sheet-link">{% translate "Sheet (all devotees)" %}</a>
     <a href="{% url 'devotees' %}" class="sheet-link">{% translate "Devotees" %}</a>
     <a href="{% url 'password_change' %}" class="sheet-link">{% translate "Change password" %}</a>
     {% if user.is_superuser %}

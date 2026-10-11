@@ -8,7 +8,9 @@ urlpatterns = [
     path("u/<int:pk>/", views.dashboard, name="dashboard"),
     path("analysis/", views.analysis, name="analysis"),
     path("ranks/", views.ranks, name="ranks"),
+    path("sheet/", views.sheet, name="sheet"),
     path("export/u/<int:pk>/", views.dashboard_export, name="dashboard_export"),
     path("export/analysis/", views.analysis_export, name="analysis_export"),
     path("export/ranks/", views.ranks_export, name="ranks_export"),
+    path("export/sheet/", views.sheet_export, name="sheet_export"),
 ]

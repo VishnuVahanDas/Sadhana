@@ -205,8 +205,8 @@
           {% for row in rows %}
             <tr>
               <td class="whitespace-nowrap px-3 py-2 font-medium">{{ row.date|date:"D j M" }}</td>
-              {% for cell in row.cells %}
-                <td class="px-3 py-2 {% if cell|length > 30 %}min-w-[14rem]{% endif %}">
+              {% for cell, level in row.shaded %}
+                <td class="px-3 py-2 {% if cell|length > 30 %}min-w-[14rem]{% endif %} {% if level is not None %}shade-{{ level }} font-semibold tabular-nums{% endif %}">
                   {% if cell is None %}<span class="text-ink/40">–</span>{% else %}{{ cell|linebreaksbr }}{% endif %}
                 </td>
               {% endfor %}

@@ -660,3 +660,43 @@
     @apply bottom-auto;
   }
 }
+
+/* Sheet: every devotee in one table; the name column stays put while the numbers scroll. */
+@layer components {
+  .sheet .sheet-name {
+    @apply sticky left-0 z-10 max-w-[9.5rem] bg-surface px-3 py-1;
+    box-shadow: 1px 0 0 rgb(var(--c-cream-dark));
+  }
+  .sheet thead .sheet-name, .sheet tfoot .sheet-name {
+    @apply bg-cream-dark py-3;
+  }
+  .sheet tbody tr:nth-child(even) td {
+    @apply bg-cream/60;
+  }
+  .sheet tbody tr:nth-child(even) .sheet-name {
+    @apply bg-cream;
+  }
+  /* Daily view: a line where each day's block of columns begins; festival days in gold. */
+  .sheet .sheet-day {
+    box-shadow: inset 2px 0 0 rgb(var(--c-cream-dark));
+  }
+  .sheet .sheet-festival {
+    background-color: rgb(var(--c-gold) / 0.3);
+  }
+  .sheet tbody tr.sheet-me td, .sheet tbody tr.sheet-me .sheet-name {
+    background-color: color-mix(in srgb, rgb(var(--c-gold)) 22%, rgb(var(--c-surface)));
+  }
+}
+
+/* Table cells shaded by value (entries, analysis and sheet tables). Plain CSS because the level is
+   built in the template. The number always stays in the cell: colour is for the quick scan only.
+   Same light-to-dark steps as the heatmap, with text colours that stay readable on each. */
+.shade-0 { background: rgb(var(--c-cream-dark) / 0.45); }
+.shade-1 { background: rgb(var(--c-saffron-light) / 0.55); }
+.shade-2 { background: rgb(var(--c-saffron-light)); color: rgb(var(--c-saffron-ink)); }
+.shade-3 { background: rgb(var(--c-saffron)); color: rgb(var(--c-saffron-ink)); }
+.shade-4 { background: rgb(var(--c-maroon)); color: rgb(var(--c-cream)); }
+.shade-0, .shade-1, .shade-2, .shade-3, .shade-4 {
+  /* A hairline in the page colour keeps neighbouring cells apart. */
+  box-shadow: inset 0 0 0 1px rgb(var(--c-surface));
+}

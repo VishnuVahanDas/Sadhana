@@ -1,10 +1,12 @@
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _lazy
 
 from sadhana.models import Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, comparison, dates, festivals, periods, ranking
@@ -212,11 +214,22 @@ def _dashboard_data(request, pk):
             "date": day.date,
             "on_time": day.on_time,
             "cells": [_cell(day.values.get(field.id)) for field in fields],
+            "levels": [None] * len(fields),
             "edit_url": reverse("entry", args=[day.date]) + suffix,
         }
         for day in sorted(days.values(), key=lambda day: day.date, reverse=True)
         if period.start <= day.date <= period.end
     ]
+    # Shade each number / yes-no column on its own scale; the text columns stay plain.
+    for position, field in enumerate(fields):
+        if analytics.is_measurable(field):
+            values = [days[row["date"]].values.get(field.id) for row in rows]
+            steps, floor = _scale(field)
+            top = scaling.daily_top([analytics.number(value) for value in values], steps, floor)
+            for row, value in zip(rows, values):
+                row["levels"][position] = scaling.shade_level(value, top)
+    for row in rows:
+        row["shaded"] = list(zip(row["cells"], row["levels"]))
     return person, today, period, fields, days, rows
 
 
@@ -330,6 +343,7 @@ def dashboard_export(request, pk):
         headers,
         data,
         extra_sheets,
+        shade=[[position + 2] for position, field in enumerate(fields) if field.is_numeric],
     )
 
 
@@ -458,11 +472,26 @@ def analysis(request):
         "charts": charts,
         "rows": rows,
         # (row, Change in daily average or None) so the table can show the comparison columns.
-        "table": [(row, compare["by_user"][row.user.pk] if compare else None) for row in rows],
+        "table": _analysis_table(rows, compare),
         "not_filled": sorted((user for user in people if user.pk not in filled_today), key=lambda u: u.display_name.lower()),
         "today": today,
     }
     return render(request, "reports/analysis.html", context)
+
+
+def _analysis_table(rows, compare):
+    """(row, Change in daily average or None, shade of the total, shade of the daily average) per devotee."""
+    total_top = scaling.relative_top([row.stats.total for row in rows])
+    average_top = scaling.relative_top([row.stats.daily_average for row in rows])
+    return [
+        (
+            row,
+            compare["by_user"][row.user.pk] if compare else None,
+            scaling.shade_level(row.stats.total, total_top),
+            scaling.shade_level(row.stats.daily_average, average_top),
+        )
+        for row in rows
+    ]
 
 
 def analysis_export(request):
@@ -492,7 +521,8 @@ def analysis_export(request):
     if compare:
         intro.append(_previous_line(compare["previous"]))
     return workbook_response(
-        f"sadhana-analysis-{label}-{period.start}-to-{period.end}", _("Analysis"), intro, headers, data
+        f"sadhana-analysis-{label}-{period.start}-to-{period.end}", _("Analysis"), intro, headers, data,
+        shade=[[3], [4]],  # Total and Daily average, each on its own scale
     )
 
 
@@ -550,3 +580,131 @@ def ranks_export(request):
         [_("Rank"), _("Name"), _("Coordinator"), str(option.label) if option else ""],
         [[item["rank"], item["row"].user.display_name, _coordinator_name(item["row"].user), item["value"]] for item in ranked],
     )
+
+
+# --- Sheet: every devotee and the core fields in one table -----------------
+
+SHEET_TOTAL, SHEET_DAILY = "total", "daily"
+SHEET_SHOWS = [(SHEET_TOTAL, _lazy("Totals")), (SHEET_DAILY, _lazy("Daily"))]
+SHEET_MAX_DAYS = 31  # the on-screen daily grid stops here; the Excel export has every day
+
+
+def _sheet_data(request, max_days=None):
+    """Rows for the sheet. Totals: one number per field. Daily: per day (newest first), one value per field."""
+    today = dates.today()
+    period = periods.from_request(request.GET, today)
+    people, coordinator = _scope(request)
+    people.sort(key=lambda person: person.display_name.lower())
+    fields, _field = _rankable_field(request, "")
+    show = SHEET_DAILY if request.GET.get("show") == SHEET_DAILY else SHEET_TOTAL
+    days_by_user = analytics.load_days_for_users(people)
+    data = {"period": period, "coordinator": coordinator, "fields": fields, "show": show, "today": today}
+
+    if show == SHEET_TOTAL:
+        rows = []
+        for person in people:
+            stats = [analytics.field_stats(days_by_user[person.pk], field, period, person.date_joined, today) for field in fields]
+            rows.append({
+                "user": person,
+                "cells": [item.total for item in stats],
+                "days_filled": stats[0].days_filled if stats else 0,
+            })
+        columns = list(zip(*(row["cells"] for row in rows))) or [() for _field in fields]
+        # Each field column is shaded relative to the group.
+        tops = [scaling.relative_top(column) for column in columns]
+        for row in rows:
+            row["shaded"] = [(value, scaling.shade_level(value, top)) for value, top in zip(row["cells"], tops)]
+        return {**data, "rows": rows, "footer": [sum(column) for column in columns]}
+
+    all_days = [day for day in reversed(period.dates()) if day <= today]
+    shown = all_days[:max_days] if max_days else all_days
+    festival_days = festivals.festival_dates(period.start, period.end)
+    rows = []
+    for person in people:
+        entered = days_by_user[person.pk]
+        # None = nothing entered for that field on that day.
+        rows.append({
+            "user": person,
+            "days": [[entered[day].values.get(field.id) if day in entered else None for field in fields] for day in shown],
+        })
+    # One scale per field across every devotee and day shown, so the same shade means the same value.
+    tops = []
+    for position, field in enumerate(fields):
+        steps, floor = _scale(field)
+        values = [analytics.number(day[position]) for row in rows for day in row["days"]]
+        tops.append(scaling.daily_top(values, steps, floor))
+    for row in rows:
+        row["shaded_days"] = [
+            [(value, scaling.shade_level(value, top)) for value, top in zip(day, tops)] for day in row["days"]
+        ]
+    footer = [
+        [sum(analytics.number(row["days"][index][position]) for row in rows) for position in range(len(fields))]
+        for index in range(len(shown))
+    ]
+    return {
+        **data,
+        "rows": rows,
+        "footer": footer,
+        "days": [{"date": day, "festivals": festival_days.get(day, [])} for day in shown],
+        "hidden_days": len(all_days) - len(shown),
+    }
+
+
+def sheet(request):
+    data = _sheet_data(request, max_days=SHEET_MAX_DAYS)
+    period, coordinator, today = data["period"], data["coordinator"], data["today"]
+    keep = {"show": data["show"]} if data["show"] != SHEET_TOTAL else {}
+    if coordinator:
+        keep["coordinator"] = coordinator.pk
+
+    def day_link(label, day):
+        query = urlencode({**keep, "period": periods.CUSTOM, "start": day.isoformat(), "end": day.isoformat()})
+        return {"label": label, "url": f"?{query}", "active": period.start == period.end == day}
+
+    context = {
+        **data,
+        "presets": periods.PRESETS,
+        "keep": keep,
+        "shows": SHEET_SHOWS,
+        "coordinators": User.objects.filter(is_coordinator=True),
+        "day_links": [day_link(_("Today"), today), day_link(_("Yesterday"), today - timedelta(days=1))],
+    }
+    return render(request, "reports/sheet.html", context)
+
+
+def sheet_export(request):
+    data = _sheet_data(request)
+    period, coordinator, fields, rows = data["period"], data["coordinator"], data["fields"], data["rows"]
+    labels = [f"{field.label} ({field.unit})" if field.unit else field.label for field in fields]
+    headers = [_("Name"), _("Coordinator")]
+    if data["show"] == SHEET_TOTAL:
+        headers += labels + [_("Days filled")]
+        lines = [[row["user"].display_name, _coordinator_name(row["user"]), *row["cells"], row["days_filled"]] for row in rows]
+        lines.append([_("Group total"), "", *data["footer"], ""])
+        shade = [[position + 3] for position in range(len(fields))]
+    else:
+        # One block of field columns per day, newest first, as on the page.
+        headers += [f"{day['date']:%a %d %b} · {label}" for day in data["days"] for label in labels]
+        lines = [
+            [row["user"].display_name, _coordinator_name(row["user"]), *(_sheet_cell(value) for day in row["days"] for value in day)]
+            for row in rows
+        ]
+        lines.append([_("Group total"), "", *(value for day in data["footer"] for value in day)])
+        # A field's columns, one per day, share one scale.
+        shade = [
+            [3 + day * len(fields) + position for day in range(len(data["days"]))] for position in range(len(fields))
+        ]
+    return workbook_response(
+        f"sadhana-sheet-{period.start}-to-{period.end}",
+        _("Sheet"),
+        [coordinator.display_name if coordinator else _("All devotees"), _period_line(period), str(dict(SHEET_SHOWS)[data["show"]])],
+        headers,
+        lines,
+        shade=shade,
+        unshaded_last_rows=1,  # the group total
+    )
+
+
+def _sheet_cell(value):
+    """Numbers stay numbers in Excel; nothing entered is an empty cell."""
+    return "" if value is None else analytics.number(value)
