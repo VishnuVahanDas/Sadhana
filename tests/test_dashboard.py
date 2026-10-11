@@ -86,9 +86,11 @@ def test_one_chart_per_numeric_field(client, filled):
     response = page(client, filled)
     charts = response.context["charts"]
     # Each field has its own chart and axis, so a spike in one never squashes another.
-    assert [chart["title"] for chart in charts] == ["Hearing", "Book Reading", "Seva", "Rounds"]
-    assert [chart["unit"] for chart in charts] == ["min", "min", "min", "rounds"]
-    hearing = charts[0]
+    assert [chart["title"] for chart in charts] == [
+        "Overall — Hearing + Book Reading + Seva", "Hearing", "Book Reading", "Seva", "Rounds",
+    ]
+    assert [chart["unit"] for chart in charts] == ["min", "min", "min", "min", "rounds"]
+    hearing = charts[1]
     assert hearing["values"][-4:] == [45, 0, 60, 30]
     assert len(hearing["labels"]) == len(hearing["values"]) == len(hearing["average"]) == 7
     assert hearing["average"][-1] == round((45 + 60 + 30) / 7, 1)
@@ -97,7 +99,7 @@ def test_one_chart_per_numeric_field(client, filled):
     html = response.content.decode()
     assert "Usual range" not in html
     embedded = html.split('<script id="chart-data" type="application/json">')[1].split("</script>")[0]
-    assert json.loads(embedded)[3]["values"][-1] == 16
+    assert json.loads(embedded)[4]["values"][-1] == 16
     assert "chart.umd.min.js" in html
 
 
@@ -180,3 +182,35 @@ def test_devotees_directory(client, user, make_user):
     assert set(client.get(url, {"coordinator": coordinator.pk}).context["people"]) == {coordinator, member}
     assert list(client.get(url, {"status": "inactive"}).context["people"]) == [inactive]
     assert inactive not in client.get(url, {"status": "active"}).context["people"]
+
+
+def test_overall_chart_adds_the_minutes_fields(client, filled, field, today):
+    # `filled` has hearing 30 / 60 / 45 on today, yesterday and three days ago; add reading and seva today.
+    entry = SadhanaEntry.objects.get(user=filled, date=today)
+    EntryValue.objects.create(entry=entry, field=field("reading"), value_int=20)
+    EntryValue.objects.create(entry=entry, field=field("seva"), value_int=90)
+    client.force_login(filled)
+    overall = page(client, filled).context["charts"][0]
+    assert overall["title"] == "Overall — Hearing + Book Reading + Seva"
+    assert overall["unit"] == "min"
+    # Minutes only: the 16 rounds are not added in.
+    assert overall["values"][-4:] == [45, 0, 60, 140]
+    assert overall["average"][-1] == round((45 + 60 + 140) / 7, 1)
+
+
+def test_overall_chart_leaves_out_unranked_minutes_and_needs_two_fields(client, filled, field, today):
+    # Day Rest is in minutes but is not a sadhana total: it must not be added.
+    UserFieldSetting.objects.create(user=filled, field=field("day_rest"), enabled=True)
+    entry = SadhanaEntry.objects.get(user=filled, date=today)
+    EntryValue.objects.create(entry=entry, field=field("day_rest"), value_int=120)
+    client.force_login(filled)
+    charts = page(client, filled).context["charts"]
+    assert charts[0]["title"] == "Overall — Hearing + Book Reading + Seva"
+    assert charts[0]["values"][-1] == 30
+    assert "Day Rest" in [chart["title"] for chart in charts]
+
+    # With only Hearing switched on, an "overall" chart would just repeat it.
+    for key in ("reading", "seva"):
+        UserFieldSetting.objects.create(user=filled, field=field(key), enabled=False)
+    titles = [chart["title"] for chart in page(client, filled).context["charts"]]
+    assert titles[0] == "Hearing" and not any(title.startswith("Overall") for title in titles)

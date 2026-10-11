@@ -189,9 +189,37 @@ def _coordinator_name(user):
 # --- Individual dashboard -------------------------------------------------
 
 
+def _overall_chart(days, fields, period, festival_days):
+    """Total minutes per day across the rankable minutes fields (Hearing + Reading + Seva), or None.
+
+    Only minutes are added together, so Rounds is left out, and so is a minutes
+    field that is not ranked (Day Rest). With fewer than two such fields the
+    total would only repeat one of the charts below.
+    """
+    parts = [
+        field for field in fields
+        if field.field_type == SadhanaField.FieldType.MINUTES and field.is_rankable
+    ]
+    if len(parts) < 2:
+        return None
+
+    def total(span):
+        return [sum(day) for day in zip(*(analytics.series(days, field, span) for field in parts))]
+
+    title = "{} — {}".format(_("Overall"), " + ".join(field.label for field in parts))
+    return _chart(
+        title, parts[0].unit, period, total(period), total(_lead_in(period)),
+        festival_days, scaling.MINUTE_STEPS, scaling.MINUTE_FLOOR,
+    )
+
+
 def _charts(days, fields, period, festival_days):
-    """One chart per numeric field, each with its own axis, so a spike in one never squashes another."""
-    charts = []
+    """The overall minutes chart, then one chart per numeric field.
+
+    Each has its own axis, so a spike in one never squashes another.
+    """
+    overall = _overall_chart(days, fields, period, festival_days)
+    charts = [overall] if overall else []
     for field in fields:
         if field.is_numeric:
             steps, floor = _scale(field)
