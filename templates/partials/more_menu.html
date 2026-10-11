@@ -39,6 +39,16 @@
       <p class="mt-1 text-xs text-ink/70"><strong>{% translate "Simple" %}:</strong> {% translate "Your entry, graphs and Excel — a clean view." %}</p>
       <p class="text-xs text-ink/70"><strong>{% translate "Advanced" %}:</strong> {% translate "Also shows streaks on Today and My Report, and the summary cards for each field." %}</p>
     </form>
+    <form method="post" action="{% url 'my_whatsapp' %}" class="mt-3 px-3">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <p id="whatsapp-label" class="text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "Show WhatsApp button" %}</p>
+      <div class="mt-1 flex gap-2" role="group" aria-labelledby="whatsapp-label">
+        <button type="submit" name="show" value="on" class="tab min-h-[44px] flex-1 {% if user.show_whatsapp_button %}tab-active{% endif %}" aria-pressed="{% if user.show_whatsapp_button %}true{% else %}false{% endif %}">{% translate "On" %}</button>
+        <button type="submit" name="show" value="off" class="tab min-h-[44px] flex-1 {% if not user.show_whatsapp_button %}tab-active{% endif %}" aria-pressed="{% if user.show_whatsapp_button %}false{% else %}true{% endif %}">{% translate "Off" %}</button>
+      </div>
+      <p class="mt-1 text-xs text-ink/70">{% translate "A button on Today and My Report that opens WhatsApp with your report ready to send to your coordinator." %}</p>
+    </form>
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}
       <button type="submit" class="sheet-link text-maroon">{% translate "Logout" %}</button>

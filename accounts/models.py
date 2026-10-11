@@ -67,6 +67,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         _("display mode"), max_length=10, choices=UiMode.choices, default=UiMode.SIMPLE, db_default=UiMode.SIMPLE
     )
 
+    # The devotee's own switch for the "Send to coordinator on WhatsApp" button (More sheet).
+    show_whatsapp_button = models.BooleanField(_("show WhatsApp button"), default=True, db_default=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"

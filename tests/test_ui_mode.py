@@ -79,10 +79,12 @@ def test_migration_sets_existing_users_to_simple_and_keeps_a_database_default():
 
         executor = MigrationExecutor(connection)
         executor.migrate([("accounts", "0003_user_ui_mode")])
-        assert User.objects.get(email="old@example.com").ui_mode == "simple"
+        # The model as it was at this migration: today's User has columns that do not exist yet here.
+        New = executor.loader.project_state([("accounts", "0003_user_ui_mode")]).apps.get_model("accounts", "User")
+        assert New.objects.get(email="old@example.com").ui_mode == "simple"
         # Rollback safety: the previous release does not know the column, and its inserts must still work.
         Old.objects.create(email="older-code@example.com", name="Added By Old Code", password="!")
-        assert User.objects.get(email="older-code@example.com").ui_mode == "simple"
+        assert New.objects.get(email="older-code@example.com").ui_mode == "simple"
     finally:
         executor = MigrationExecutor(connection)
         executor.migrate(executor.loader.graph.leaf_nodes())

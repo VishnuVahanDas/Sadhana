@@ -11,6 +11,7 @@ from audit.models import AuditLog
 from .decorators import superuser_required
 from .forms import PasswordResetForm, UserCreateForm, UserDeleteForm, UserForm
 from .models import UiMode, User
+from .phones import whatsapp_number
 
 Action = AuditLog.Action
 
@@ -44,7 +45,21 @@ def user_list(request):
         users = users.filter(ui_mode=mode)
     else:
         mode = ""
-    return render(request, "manage/user_list.html", {"users": users, "mode": mode, "modes": UiMode.choices})
+    # Iterating fills the queryset's cache, so the flag set here is still there in the template.
+    for person in users:
+        # Their coordinator cannot be reached on WhatsApp, so this devotee gets no "Send to coordinator" button.
+        person.coordinator_phone_missing = bool(
+            person.coordinator_id
+            and person.coordinator_id != person.pk
+            and not whatsapp_number(person.coordinator.phone)
+        )
+    phone = request.GET.get("phone", "")
+    if phone == "missing":
+        users = [person for person in users if person.coordinator_phone_missing]
+    else:
+        phone = ""
+    context = {"users": users, "mode": mode, "modes": UiMode.choices, "phone": phone}
+    return render(request, "manage/user_list.html", context)
 
 
 @superuser_required

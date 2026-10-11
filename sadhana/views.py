@@ -19,7 +19,7 @@ from audit.services import get_client_ip
 from .forms import EntryForm
 from .models import AppSettings, SadhanaEntry
 from . import themes
-from .services import analytics, dates, entries, festivals, month_calendar, yatra
+from .services import analytics, dates, entries, festivals, month_calendar, whatsapp, yatra
 from .services.fields import effective_fields, has_personal_streak
 
 RECENT_DAYS = 7
@@ -68,6 +68,8 @@ def _entry_page(request, date, app_settings):
         if form.is_valid():
             entries.save_entry(owner, date, form.values(), actor=actor, ip=get_client_ip(request))
             messages.success(request, _("Hare Krishna! Your sadhana has been saved."))
+            # The page after the redirect puts the WhatsApp button right under this message.
+            request.session["entry_just_saved"] = True
             return redirect(page_url)
     else:
         form = EntryForm(fields=fields, entry=existing)
@@ -80,7 +82,11 @@ def _entry_page(request, date, app_settings):
     month = month_calendar.parse(request.GET.get("month"), date, today)
     # Streaks follow the reader's display mode; in Simple mode they are not worked out at all.
     show_streaks = actor.is_advanced
+    just_saved = request.session.pop("entry_just_saved", False)
     context = {
+        # Only on the devotee's own entry: the message goes out from their own WhatsApp.
+        "whatsapp_url": whatsapp.build_whatsapp_link(existing) if existing and owner == actor else None,
+        "just_saved": just_saved,
         "form": form,
         "owner": owner,
         "owner_is_user": owner == actor,
@@ -195,6 +201,24 @@ def my_mode(request):
             messages.success(request, _("Advanced view: streaks are shown on Today and My Report."))
         else:
             messages.success(request, _("Simple view: your entry, graphs and Excel."))
+    return redirect(_back(request))
+
+
+@require_POST
+def my_whatsapp(request):
+    """A devotee shows or hides their own "Send to coordinator on WhatsApp" button."""
+    user, show = request.user, request.POST.get("show", "")
+    if show in ("on", "off") and (show == "on") != user.show_whatsapp_button:
+        old, user.show_whatsapp_button = user.show_whatsapp_button, show == "on"
+        user.save(update_fields=["show_whatsapp_button"])
+        audit.log(
+            AuditLog.Action.USER_UPDATE, user, target_user=user, field_key="show_whatsapp_button",
+            old_value=old, new_value=user.show_whatsapp_button, ip=get_client_ip(request),
+        )
+        if user.show_whatsapp_button:
+            messages.success(request, _("The WhatsApp button is shown again."))
+        else:
+            messages.success(request, _("The WhatsApp button is hidden."))
     return redirect(_back(request))
 
 

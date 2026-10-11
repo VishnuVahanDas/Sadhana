@@ -335,6 +335,21 @@
     @apply inline-flex min-h-[44px] items-center justify-center rounded-xl border border-cream-dark bg-surface px-4
       text-sm font-medium text-ink shadow-sm transition hover:bg-cream active:scale-95 disabled:opacity-40;
   }
+  /* "Send to coordinator on WhatsApp": a green outline on the theme's surface, not a solid brand button. */
+  .btn-whatsapp {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border-2 bg-surface px-4 py-2
+      text-base font-semibold shadow-sm transition active:scale-[0.98] focus:outline-none focus:ring-4;
+    border-color: #1fa855;
+    /* Leans towards the ink colour, so it stays readable on the light and the dark themes. */
+    color: color-mix(in srgb, #1fa855 65%, rgb(var(--c-ink)));
+    --tw-ring-color: rgb(31 168 85 / 0.3);
+  }
+  .btn-whatsapp:hover {
+    background-color: rgb(31 168 85 / 0.1);
+  }
+  .btn-whatsapp-compact {
+    @apply min-h-[44px] whitespace-nowrap border px-3 text-sm;
+  }
   .day-pill {
     @apply flex min-h-[52px] flex-1 flex-col items-center justify-center rounded-xl border border-cream-dark bg-surface
       text-xs text-ink transition active:scale-95;

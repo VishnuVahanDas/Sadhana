@@ -205,6 +205,7 @@
             {% for field in fields %}<th class="whitespace-nowrap px-3 py-2">{{ field.label }}</th>{% endfor %}
             <th class="whitespace-nowrap px-3 py-2">{% translate "On time" %}</th>
             {% if can_edit %}<th class="px-3 py-2"><span class="sr-only">{% translate "Edit" %}</span></th>{% endif %}
+            {% if show_whatsapp %}<th class="px-3 py-2"><span class="sr-only">{% translate "Send to coordinator on WhatsApp" %}</span></th>{% endif %}
           </tr>
         </thead>
         <tbody class="divide-y divide-cream-dark">
@@ -219,6 +220,9 @@
               <td class="px-3 py-2">{% if row.on_time %}<span title="{% translate 'Entered on time' %}">✓</span>{% else %}<span class="text-ink/60" title="{% translate 'Entered late' %}">{% translate "Late" %}</span>{% endif %}</td>
               {% if can_edit %}
                 <td class="px-3 py-2"><a href="{{ row.edit_url }}" class="inline-flex min-h-[44px] items-center font-medium text-maroon underline">{% translate "Edit" %}</a></td>
+              {% endif %}
+              {% if show_whatsapp %}
+                <td class="px-3 py-2">{% include "partials/whatsapp_button.html" with url=row.whatsapp_url compact=True %}</td>
               {% endif %}
             </tr>
           {% endfor %}

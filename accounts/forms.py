@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from .models import User
+from .phones import normalise_phone
 
 # No look-alike characters (0/o, 1/l/i), so it is easy to read out to a devotee.
 PASSWORD_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"
@@ -83,6 +84,7 @@ class UserForm(StyledFormMixin, forms.ModelForm):
             "is_superuser": _("Superuser (can manage users, fields and settings)"),
         }
         help_texts = {
+            "phone": _("10-digit mobile number. Devotees send their report to their coordinator's WhatsApp."),
             "ui_mode": _("Simple hides the streaks. Advanced also shows them on Today and My Report."),
         }
 
@@ -102,6 +104,11 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
             raise ValidationError(_("A user with this email already exists."))
         return email
+
+    def clean_phone(self):
+        """Stored as digits with the country code (919876543210), ready for a wa.me link. Empty stays empty."""
+        phone = self.cleaned_data["phone"].strip()
+        return normalise_phone(phone) if phone else ""
 
 
 class UserCreateForm(TemporaryPasswordMixin, UserForm):

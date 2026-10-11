@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _lazy
 from accounts.decorators import superuser_or_home
 from sadhana.models import AppSettings, Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, comparison, dates, festivals, periods, ranking
+from sadhana.services import whatsapp
 from sadhana.services import yatra as yatra_service
 from sadhana.services.fields import effective_fields, has_personal_streak
 
@@ -268,6 +269,10 @@ def _dashboard_data(request, pk):
 def dashboard(request, pk):
     person, today, period, fields, days, rows = _dashboard_data(request, pk)
     rankable = [field for field in fields if field.is_rankable]
+    # "Send to coordinator on WhatsApp" for each day, on the devotee's own report only.
+    if request.user == person:
+        for row in rows:
+            row["whatsapp_url"] = whatsapp.day_link(person, row["date"], days[row["date"]].values, fields)
     # The field cards and the streaks follow the reader's display mode, on their own page and on anyone
     # else's: a Simple-mode reader gets the trends, the year and the entries, and neither is worked out.
     show_streaks = show_cards = request.user.is_advanced
@@ -316,6 +321,7 @@ def dashboard(request, pk):
         "heatmap": analytics.heatmap(days, heat_field, today, top=heat_top) if heat_field else [],
         "heat_top": heat_top,
         "rows": rows,
+        "show_whatsapp": any(row.get("whatsapp_url") for row in rows),
         "can_edit": request.user == person or request.user.is_superuser,
         "keep": keep,
         "journey": yatra_service.journey(

@@ -1,0 +1,12 @@
+{% load i18n %}
+{# A plain wa.me link: the devotee's own WhatsApp opens with the report filled in. compact=True is the small one in tables. #}
+{% if url %}
+  <a href="{{ url }}" target="_blank" rel="noopener" class="btn-whatsapp {% if compact %}btn-whatsapp-compact{% else %}w-full{% endif %}"
+     {% if compact %}aria-label="{% translate 'Send to coordinator on WhatsApp' %}" title="{% translate 'Send to coordinator on WhatsApp' %}"{% endif %}>
+    <svg viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5A8.5 8.5 0 1 1 21 11.5z" />
+      <path d="M8.5 10h7M8.5 13.5h4.5" />
+    </svg>
+    <span>{% if compact %}{% translate "Send" %}{% else %}{% translate "Send to coordinator on WhatsApp" %}{% endif %}</span>
+  </a>
+{% endif %}

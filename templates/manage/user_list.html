@@ -5,14 +5,23 @@
   <h1 class="text-xl font-bold text-maroon">{% translate "Users" %} <span class="text-base font-normal text-ink/60">({{ users|length }})</span></h1>
   <a href="{% url 'manage_user_add' %}" class="btn-primary !w-auto">{% translate "Add user" %}</a>
 </div>
-<form method="get" class="mb-3">
-  <label for="mode" class="mb-1 block text-sm font-medium">{% translate "Display mode" %}</label>
-  <select id="mode" name="mode" class="input" data-autosubmit>
-    <option value="">{% translate "All" %}</option>
-    {% for key, label in modes %}
-      <option value="{{ key }}" {% if key == mode %}selected{% endif %}>{{ label }}</option>
-    {% endfor %}
-  </select>
+<form method="get" class="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+  <div>
+    <label for="mode" class="mb-1 block text-sm font-medium">{% translate "Display mode" %}</label>
+    <select id="mode" name="mode" class="input" data-autosubmit>
+      <option value="">{% translate "All" %}</option>
+      {% for key, label in modes %}
+        <option value="{{ key }}" {% if key == mode %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="phone" class="mb-1 block text-sm font-medium">{% translate "Coordinator phone" %}</label>
+    <select id="phone" name="phone" class="input" data-autosubmit>
+      <option value="">{% translate "All" %}</option>
+      <option value="missing" {% if phone == "missing" %}selected{% endif %}>{% translate "Coordinator phone missing" %}</option>
+    </select>
+  </div>
 </form>
 {# The tick boxes below belong to this form through their form="bulk-mode" attribute. #}
 <form id="bulk-mode" method="post" action="{% url 'manage_users_mode' %}" class="card mb-3">
@@ -43,6 +52,7 @@
       </p>
       <p class="text-sm text-ink/70">
         {% translate "Coordinator" %}: {% if person.coordinator %}{{ person.coordinator.display_name }}{% else %}—{% endif %}
+        {% if person.coordinator_phone_missing %}<span class="badge bg-saffron-light" title="{% translate 'This devotee cannot send their report on WhatsApp until the coordinator has a valid phone number.' %}">{% translate "Coordinator phone missing" %}</span>{% endif %}
       </p>
       <div class="mt-3 flex flex-wrap gap-2">
         <a href="{% url 'manage_user_edit' person.pk %}" class="btn-secondary">{% translate "Edit" %}</a>
@@ -51,7 +61,7 @@
       </div>
     </li>
   {% empty %}
-    <li class="card text-sm text-ink/70">{% translate "No users in this mode." %}</li>
+    <li class="card text-sm text-ink/70">{% translate "No users match this filter." %}</li>
   {% endfor %}
 </ul>
 {% endblock %}
