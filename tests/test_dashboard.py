@@ -214,3 +214,16 @@ def test_overall_chart_leaves_out_unranked_minutes_and_needs_two_fields(client, 
         UserFieldSetting.objects.create(user=filled, field=field(key), enabled=False)
     titles = [chart["title"] for chart in page(client, filled).context["charts"]]
     assert titles[0] == "Hearing" and not any(title.startswith("Overall") for title in titles)
+
+
+def test_sections_appear_in_the_agreed_order(client, filled):
+    """Trends, then the field cards, the last 365 days, the entries, and Bhakti Yatra at the end."""
+    client.force_login(filled)
+    html = page(client, filled).content.decode()
+    marks = [
+        'aria-label="Trend"', 'aria-label="Summary"', 'id="calendar"', 'aria-label="Entries"',
+        'aria-label="Bhakti Yatra"',
+    ]
+    positions = [html.index(mark) for mark in marks]
+    assert positions == sorted(positions)
+    assert html.count('aria-label="Bhakti Yatra"') == 1

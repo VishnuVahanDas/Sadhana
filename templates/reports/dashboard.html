@@ -24,8 +24,6 @@
 {% include "partials/period_chips.html" %}
 {% include "partials/compare_toggle.html" %}
 
-{% if person == user %}{% include "partials/yatra_card.html" with mine=True %}{% else %}{% include "partials/yatra_card.html" with mine=False %}{% endif %}
-
 {% if compare %}
 <section aria-label="{% translate 'Comparison' %}" class="mb-6 space-y-3">
   <h2 class="section-title">{% translate "Compared with the previous period" %}</h2>
@@ -61,6 +59,15 @@
     </article>
   {% endfor %}
   <p class="text-xs text-ink/60">{% translate "Bars are this period; the line is the previous period, lined up day by day." %}{% if show_streaks %} {% translate "Dhairya streaks are not compared: they are live and all-time." %}{% endif %}</p>
+</section>
+{% endif %}
+
+{# Order chosen by the temple: trends first, then the field cards, the year, the entries, and Bhakti Yatra last. #}
+{% if charts %}
+<section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
+  <h2 class="section-title">{% translate "Daily trend" %}</h2>
+  {% include "partials/charts.html" %}
+  <p class="text-xs text-ink/60">{% translate "Bars are each day; the line is the 7-day average. Gold bands are festival days. The first chart adds the minutes fields together; the same numbers are in the table below." %}</p>
 </section>
 {% endif %}
 
@@ -134,14 +141,6 @@
     <p class="card text-sm text-ink/70">{% translate "No fields are enabled for this devotee." %}</p>
   {% endfor %}
 </section>
-
-{% if charts %}
-<section aria-label="{% translate 'Trend' %}" class="mb-6 space-y-3">
-  <h2 class="section-title">{% translate "Daily trend" %}</h2>
-  {% include "partials/charts.html" %}
-  <p class="text-xs text-ink/60">{% translate "Bars are each day; the line is the 7-day average. Gold bands are festival days. The first chart adds the minutes fields together; the same numbers are in the table below." %}</p>
-</section>
-{% endif %}
 
 {% if heat_field %}
 {# Changing the field swaps only this section (dashboard.js), so the page does not jump back to the top. #}
@@ -225,6 +224,10 @@
     <p class="card text-sm text-ink/70">{% translate "No entries in this period." %}</p>
   {% endif %}
 </section>
+
+<div class="mt-6">
+  {% if person == user %}{% include "partials/yatra_card.html" with mine=True %}{% else %}{% include "partials/yatra_card.html" with mine=False %}{% endif %}
+</div>
 
 {% include "partials/chart_scripts.html" %}
 {% endblock %}
