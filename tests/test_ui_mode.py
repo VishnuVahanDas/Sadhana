@@ -155,7 +155,8 @@ def test_simple_reader_sees_no_streaks_and_none_are_computed(client, people, tod
 
     assert client.get(reverse("home")).context["streak_badges"] == []
     report = client.get(reverse("dashboard", args=[advanced.pk]))
-    assert all(card["streaks"] is None for card in report.context["cards"])
+    # No field cards either (Hearing, Reading, ...): those are for Advanced mode.
+    assert report.context["cards"] == [] and 'aria-label="Summary"' not in report.content.decode()
     assert report.context["journey"].dhairya == [] and report.context["journey"].together is None
     road = client.get(reverse("yatra")).context
     assert road["longest_dhairya"] is None
@@ -169,8 +170,10 @@ def test_simple_reader_keeps_everything_else(client, people, today):
     assert 'aria-label="Bhakti Yatra"' in today_page and "min offered" in today_page  # vehicle and Utsāha stay
     report = client.get(reverse("dashboard", args=[simple.pk]))
     html = report.content.decode()
-    for text in ("Daily average", "Typical day", "Days filled", 'class="heatmap"'):
+    for text in ("Daily trend", 'class="heatmap"', "Last 365 days"):
         assert text in html, text
+    for text in ('aria-label="Summary"', "Typical day", "stat-number", "No fields are enabled"):
+        assert text not in html, text
     assert report.context["charts"] and report.context["heatmap"]
     assert client.get(reverse("dashboard_export", args=[simple.pk])).status_code == 200
 
@@ -187,7 +190,8 @@ def test_advanced_reader_sees_streaks_on_own_and_other_pages(client, people, tod
     report = client.get(reverse("dashboard", args=[simple.pk]))
     streak_cards = {card["field"].key: card["streaks"].current for card in report.context["cards"] if card["streaks"]}
     assert streak_cards == {"hearing": 3, "reading": 3, "seva": 3, "rounds": 3}
-    assert "On-time Dhairya" in report.content.decode()
+    html = report.content.decode()
+    assert "On-time Dhairya" in html and 'aria-label="Summary"' in html and "Typical day" in html
     assert [item["field"].key for item in report.context["journey"].dhairya] == ["hearing", "reading", "seva"]
     road = client.get(reverse("yatra"))
     assert road.context["longest_dhairya"]["streaks"].longest == 3

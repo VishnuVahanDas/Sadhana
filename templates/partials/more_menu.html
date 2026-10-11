@@ -37,7 +37,7 @@
         <button type="submit" name="ui_mode" value="advanced" class="tab min-h-[44px] flex-1 {% if user.is_advanced %}tab-active{% endif %}" aria-pressed="{% if user.is_advanced %}true{% else %}false{% endif %}">{% translate "Advanced" %}</button>
       </div>
       <p class="mt-1 text-xs text-ink/70"><strong>{% translate "Simple" %}:</strong> {% translate "Your entry, graphs and Excel — a clean view." %}</p>
-      <p class="text-xs text-ink/70"><strong>{% translate "Advanced" %}:</strong> {% translate "Also shows streaks on Today and My Report." %}</p>
+      <p class="text-xs text-ink/70"><strong>{% translate "Advanced" %}:</strong> {% translate "Also shows streaks on Today and My Report, and the summary cards for each field." %}</p>
     </form>
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}

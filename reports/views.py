@@ -268,8 +268,9 @@ def _dashboard_data(request, pk):
 def dashboard(request, pk):
     person, today, period, fields, days, rows = _dashboard_data(request, pk)
     rankable = [field for field in fields if field.is_rankable]
-    # Streaks follow the reader's display mode, on their own page and on anyone else's.
-    show_streaks = request.user.is_advanced
+    # The field cards and the streaks follow the reader's display mode, on their own page and on anyone
+    # else's: a Simple-mode reader gets the trends, the year and the entries, and neither is worked out.
+    show_streaks = show_cards = request.user.is_advanced
     cards = [
         {
             "field": field,
@@ -279,6 +280,7 @@ def dashboard(request, pk):
             ),
         }
         for field in rankable
+        if show_cards
     ]
     for card in cards:
         # Percentages for the progress ring (days filled) and the bar (daily average against the target).
@@ -304,6 +306,7 @@ def dashboard(request, pk):
         "presets": periods.PRESETS,
         "fields": fields,
         "cards": cards,
+        "show_cards": show_cards,
         "charts": charts,
         "compare": compare,
         "compare_url": _compare_url(request),

@@ -71,6 +71,8 @@
 </section>
 {% endif %}
 
+{# The field cards are for Advanced mode only; a Simple-mode reader goes straight from the trends to the year. #}
+{% if show_cards %}
 <section aria-label="{% translate 'Summary' %}" class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
   {% for card in cards %}
     <article class="card stat-card">
@@ -141,6 +143,7 @@
     <p class="card text-sm text-ink/70">{% translate "No fields are enabled for this devotee." %}</p>
   {% endfor %}
 </section>
+{% endif %}
 
 {% if heat_field %}
 {# Changing the field swaps only this section (dashboard.js), so the page does not jump back to the top. #}
