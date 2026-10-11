@@ -13,14 +13,15 @@
       <span class="yatra-icon"><img src="{% static 'img/yatra/padayatri.svg' %}" alt=""></span>
     {% endif %}
     <div class="min-w-0">
-      <p class="text-xs text-ink/70">{% translate "Niścaya" %} · {% if mine %}{% translate "My vehicle" %}{% else %}{% translate "Vehicle" %}{% endif %}</p>
       {% if journey.vehicle.started %}
-        <p class="font-serif text-lg font-bold leading-tight">{{ journey.vehicle.level.name }}</p>
+        <p class="font-serif text-lg font-bold leading-tight">{% blocktranslate with name=journey.vehicle.level.name %}Yātrī by {{ name }}{% endblocktranslate %}</p>
+        <p class="text-xs text-ink/70">{% translate "Niścaya — steady chanting over the last 7 days" %}</p>
         {% if journey.vehicle.level.description %}<p class="text-sm text-ink/80">{{ journey.vehicle.level.description }}</p>{% endif %}
         <p class="text-xs text-ink/60">{% blocktranslate with average=journey.vehicle.average count days=journey.vehicle.filled_days %}Average {{ average }} rounds over {{ days }} filled day of the last 7{% plural %}Average {{ average }} rounds over {{ days }} filled days of the last 7{% endblocktranslate %}</p>
       {% else %}
-        <p class="font-serif text-lg font-bold leading-tight">{% translate "Starting the journey" %}</p>
-        <p class="text-xs text-ink/60">{% blocktranslate with days=journey.vehicle.filled_days %}The vehicle appears once rounds are filled on 3 of the last 7 days ({{ days }} so far).{% endblocktranslate %}</p>
+        <p class="font-serif text-lg font-bold leading-tight">{% translate "Yātrī — starting the journey" %}</p>
+        <p class="text-xs text-ink/70">{% translate "Niścaya — steady chanting over the last 7 days" %}</p>
+        <p class="text-xs text-ink/60">{% blocktranslate with days=journey.vehicle.filled_days %}Your Yatra level appears once rounds are filled on 3 of the last 7 days ({{ days }} so far).{% endblocktranslate %}</p>
       {% endif %}
     </div>
   </div>

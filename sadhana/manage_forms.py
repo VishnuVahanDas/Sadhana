@@ -118,7 +118,7 @@ class VehicleLevelForm(_LevelForm):
     class Meta:
         model = VehicleLevel
         fields = ["name", "min_rounds", "icon", "description"]
-        help_texts = {"min_rounds": _("A devotee gets this vehicle from this 7-day average of rounds upwards.")}
+        help_texts = {"min_rounds": _("A devotee travels at this Yatra level from this 7-day average of rounds upwards.")}
 
 
 class UtsahaLevelForm(_LevelForm):

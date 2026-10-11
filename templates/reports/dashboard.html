@@ -14,6 +14,8 @@
           <span class="badge bg-bar-ink/20">{% translate "Inactive" %}</span>
         {% endif %}
       </div>
+      {# On its own line so the longest level names wrap instead of being cut off. #}
+      <p class="text-sm font-semibold">{% if journey.vehicle.started %}{% blocktranslate with name=journey.vehicle.level.name %}Yātrī by {{ name }}{% endblocktranslate %}{% else %}{% translate "Yātrī — starting the journey" %}{% endif %}</p>
       <p class="text-sm text-bar-ink/80">
         {% translate "Coordinator" %}: {% if person.coordinator %}<a class="underline" href="{% url 'dashboard' person.coordinator.pk %}">{{ person.coordinator.display_name }}</a>{% else %}—{% endif %}
       </p>

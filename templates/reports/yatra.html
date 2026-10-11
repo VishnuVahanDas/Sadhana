@@ -26,7 +26,7 @@
       </thead>
       <tbody class="divide-y divide-cream-dark align-top">
         <tr><th scope="row" class="py-2 pr-3 font-semibold italic">utsāha</th><td class="py-2 pr-3">{% translate "Enthusiasm" %}</td><td class="py-2">{% translate "Today's Utsāha meter (minutes offered)" %}</td></tr>
-        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">niścaya</th><td class="py-2 pr-3">{% translate "Firm confidence, steady commitment" %}</td><td class="py-2">{% translate "My vehicle (7-day rounds)" %}</td></tr>
+        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">niścaya</th><td class="py-2 pr-3">{% translate "Firm confidence, steady commitment" %}</td><td class="py-2">{% translate "Yātrī by … (7-day rounds)" %}</td></tr>
         <tr><th scope="row" class="py-2 pr-3 font-semibold italic">dhairya</th><td class="py-2 pr-3">{% translate "Patience" %}</td><td class="py-2">{% translate "Dhairya streaks" %}</td></tr>
         <tr><th scope="row" class="py-2 pr-3 font-semibold italic">tat-tat-karma-pravartana</th><td class="py-2 pr-3">{% translate "Carrying out the practices" %}</td><td class="py-2">{% translate "The daily sadhana entry" %}</td></tr>
         <tr><th scope="row" class="py-2 pr-3 font-semibold italic">sato vṛtti</th><td class="py-2 pr-3">{% translate "Following saintly devotees" %}</td><td class="py-2">{% translate "Travelling together on Sanga Yatra" %}</td></tr>
@@ -59,14 +59,13 @@
           {% if group.level %}
             <span class="yatra-icon yatra-icon-sm"><img src="{% static group.level.icon_path %}" alt=""></span>
             <div class="min-w-0">
-              <h3 class="font-serif text-base font-bold leading-tight">{{ group.level.name }}</h3>
+              <h3 class="font-serif text-base font-bold leading-tight">{% blocktranslate with name=group.level.name count devotees=group.people|length %}By {{ name }} — {{ devotees }} devotee{% plural %}By {{ name }} — {{ devotees }} devotees{% endblocktranslate %}</h3>
               {% if group.level.description %}<p class="text-xs text-ink/70">{{ group.level.description }}</p>{% endif %}
             </div>
           {% else %}
             <span class="yatra-icon yatra-icon-sm"><img src="{% static 'img/yatra/padayatri.svg' %}" alt=""></span>
-            <h3 class="font-serif text-base font-bold">{% translate "Starting the journey" %}</h3>
+            <h3 class="font-serif text-base font-bold leading-tight">{% blocktranslate count devotees=group.people|length %}Starting the journey — {{ devotees }} devotee{% plural %}Starting the journey — {{ devotees }} devotees{% endblocktranslate %}</h3>
           {% endif %}
-          <span class="ml-auto text-xs text-ink/60">{{ group.people|length }}</span>
         </div>
         <ul class="flex flex-wrap gap-2">
           {% for item in group.people %}

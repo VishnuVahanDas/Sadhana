@@ -228,7 +228,7 @@ def test_cards_on_today_and_my_report(client, sanga, today):
     # Nothing saved for yesterday: no card. Today is saved: vehicle and Utsāha are shown.
     assert 'aria-label="Bhakti Yatra"' not in client.get(reverse("entry", args=[today - timedelta(days=1)])).content.decode()
     saved = client.get(reverse("entry", args=[today])).content.decode()
-    assert "Starting the journey" in saved and "15 min offered" in saved and "Dhairya" in saved
+    assert "Yātrī — starting the journey" in saved and "15 min offered" in saved and "Dhairya" in saved
     report = client.get(reverse("dashboard", args=[sanga["zara"].pk]))
     assert report.context["journey"].vehicle.level.name == "Ratha"
     html = report.content.decode()
@@ -300,3 +300,30 @@ def test_ladder_migration_can_be_reversed(db):
     assert VehicleLevel.objects.get(min_rounds=16).name == "Ratha"
     # Thresholds and the number of rows never change.
     assert list(VehicleLevel.objects.values_list("min_rounds", flat=True)) == thresholds
+
+
+def test_wording_is_yatri_by_and_never_vehicle(client, sanga, superuser, today):
+    client.force_login(sanga["zara"])
+    pages = {
+        "yatra": client.get(reverse("yatra")).content.decode(),
+        "report": client.get(reverse("dashboard", args=[sanga["zara"].pk])).content.decode(),
+        "newcomer": client.get(reverse("dashboard", args=[sanga["new"].pk])).content.decode(),
+        "today": client.get(reverse("entry", args=[today])).content.decode(),
+    }
+    assert "By Ratha — 2 devotees" in pages["yatra"] and "By Padayātrī — 1 devotee<" in pages["yatra"]
+    assert "Starting the journey — 2 devotees" in pages["yatra"]  # the newcomer and the superuser
+    assert "Every devotee is a yātrī (pilgrim)" in pages["yatra"]
+    # The card and the page header both say it; the level's own meaning stays under the card title.
+    assert pages["report"].count("Yātrī by Ratha") == 2 and "the 16-round standard" in pages["report"]
+    assert "Niścaya — steady chanting over the last 7 days" in pages["today"] and "Yātrī by Ratha" in pages["today"]
+    assert pages["newcomer"].count("Yātrī — starting the journey") == 2
+
+    client.force_login(superuser)
+    manage = client.get(reverse("manage_yatra")).content.decode()
+    form = client.get(reverse("manage_yatra_edit", args=["vehicle", VehicleLevel.objects.first().pk])).content.decode()
+    assert "Yatra levels" in manage and "Yatra level" in form
+    # The word is left only in the edit link's address and in the top level's own meaning, which is
+    # a superuser-editable value in the database, not wording in the code.
+    for html in [*pages.values(), manage, form]:
+        text = html.lower().replace("/manage/yatra/vehicle/", "").replace("the vehicle of the spiritual world", "")
+        assert "vehicle" not in text

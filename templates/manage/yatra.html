@@ -1,10 +1,10 @@
 {% extends "manage/base.html" %}
 {% load static i18n %}
 {% block manage %}
-<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Bhakti Yatra" %}</h1>
+<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Yatra levels" %}</h1>
 <p class="mb-3 text-sm text-ink/70">{% translate "These levels only change what is shown. Entries, totals and streaks are never changed." %}</p>
 
-<h2 class="section-title mb-2">{% translate "Vehicles (Niścaya)" %}</h2>
+<h2 class="section-title mb-2">{% translate "Yatra levels (Niścaya)" %}</h2>
 <p class="mb-2 text-xs text-ink/70">{% translate "From the average rounds over the last 7 days, counting filled days only." %}</p>
 <ul class="mb-6 space-y-2">
   {% for level in vehicles %}
