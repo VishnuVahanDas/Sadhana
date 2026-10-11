@@ -9,13 +9,19 @@ from openpyxl import load_workbook
 
 from accounts.models import User
 from audit.models import AuditLog
-from sadhana.models import EntryValue, Festival, SadhanaEntry, SadhanaField
+from sadhana.models import AppSettings, EntryValue, Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, festivals, periods
 
 
 @pytest.fixture
 def today(db):
     return timezone.localdate()
+
+
+@pytest.fixture(autouse=True)
+def rank_table_on(db):
+    """The rank table is off by default (Sanga Yatra replaces it); these tests are about the table itself."""
+    AppSettings.objects.update_or_create(pk=1, defaults={"rank_table_enabled": True})
 
 
 def festival(name, start, end=None):

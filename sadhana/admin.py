@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import AppSettings, EntryValue, Festival, SadhanaEntry, SadhanaField, UserFieldSetting
+from .models import (
+    AppSettings, EntryValue, Festival, SadhanaEntry, SadhanaField, UserFieldSetting, UtsahaLevel, VehicleLevel,
+)
 
 
 @admin.register(SadhanaField)
@@ -46,3 +48,13 @@ class AppSettingsAdmin(admin.ModelAdmin):
 class FestivalAdmin(admin.ModelAdmin):
     list_display = ("name", "start_date", "end_date")
     date_hierarchy = "start_date"
+
+
+@admin.register(VehicleLevel)
+class VehicleLevelAdmin(admin.ModelAdmin):
+    list_display = ("name", "min_rounds", "icon")
+
+
+@admin.register(UtsahaLevel)
+class UtsahaLevelAdmin(admin.ModelAdmin):
+    list_display = ("label", "min_minutes", "diya_count", "is_full_flame")

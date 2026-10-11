@@ -8,8 +8,9 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
 
-from sadhana.models import Festival, SadhanaEntry, SadhanaField
+from sadhana.models import AppSettings, Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, comparison, dates, festivals, periods, ranking
+from sadhana.services import yatra as yatra_service
 from sadhana.services.fields import effective_fields, has_personal_streak
 
 from .exports import workbook_response
@@ -281,6 +282,9 @@ def dashboard(request, pk):
         "rows": rows,
         "can_edit": request.user == person or request.user.is_superuser,
         "keep": keep,
+        "journey": yatra_service.journey(
+            person, days, yatra_service.Setup.load(), streak_fields=[field for field in fields if field.has_streak]
+        ),
     }
     return render(request, "reports/dashboard.html", context)
 
@@ -506,7 +510,7 @@ def analysis_export(request):
         )
     headers = [_("Name"), _("Coordinator"), _("Total"), _("Daily average"), _("Typical day"), _("Days filled")]
     if field and field.has_streak:
-        headers += [_("Current streak"), _("On-time streak")]
+        headers += [_("Dhairya (current streak)"), _("Dhairya (on-time streak)")]
     if compare:
         headers += [_("Previous daily average"), _("Change"), _("Change %")]
     data = []
@@ -548,7 +552,14 @@ def _ranks_data(request):
     return period, coordinator, fields, field, option, ranked, days_key
 
 
+def _rank_table_enabled():
+    """The rank table is kept for special events; a superuser switches it on in Settings."""
+    return AppSettings.load().rank_table_enabled
+
+
 def ranks(request):
+    if not _rank_table_enabled():
+        return redirect("yatra")
     period, coordinator, fields, field, option, ranked, days_key = _ranks_data(request)
     keep = {"metric": field.key, "by": option.key} if field else {}
     if coordinator:
@@ -573,6 +584,8 @@ def ranks(request):
 
 
 def ranks_export(request):
+    if not _rank_table_enabled():
+        return redirect("yatra")
     period, coordinator, _fields, field, option, ranked, days_key = _ranks_data(request)
     label = f"{field.label} — {option.label}" if field else ""
     intro = [label, coordinator.display_name if coordinator else _("All devotees")]
@@ -713,3 +726,37 @@ def sheet_export(request):
 def _sheet_cell(value):
     """Numbers stay numbers in Excel; nothing entered is an empty cell."""
     return "" if value is None else analytics.number(value)
+
+
+# --- Sanga Yatra: the group travelling together ----------------------------
+
+
+def _offering(minutes):
+    return {"hours": minutes // 60, "minutes": minutes % 60}
+
+
+def yatra(request):
+    setup = yatra_service.Setup.load()
+    people = list(User.objects.filter(is_participating=True))
+    days_by_user = analytics.load_days_for_users(people)
+    # An inactive devotee still sees their own journey; they are just not on the road list.
+    my_days = days_by_user[request.user.pk] if request.user.pk in days_by_user else analytics.load_days(request.user)
+    streak_fields = [field for field in effective_fields(request.user) if field.has_streak]
+    journey = yatra_service.journey(request.user, my_days, setup, streak_fields=streak_fields)
+    longest = max(journey.dhairya, key=lambda item: item["streaks"].longest, default=None)
+    spans = [
+        (_("Today"), Period(periods.CUSTOM, setup.day, setup.day)),
+        (_("This week"), periods.resolve("this_week", setup.day)),
+        (_("This month"), periods.resolve("this_month", setup.day)),
+    ]
+    context = {
+        "journey": journey,
+        "longest_dhairya": longest if longest and longest["streaks"].longest else None,
+        "best_day": yatra_service.best_day(my_days, setup.minute_ids, setup.day.replace(day=1), setup.day),
+        "groups": yatra_service.road_together(people, days_by_user, setup),
+        "offerings": [
+            {"label": label, **_offering(yatra_service.sanga_offering(span, people, days_by_user, setup))}
+            for label, span in spans
+        ],
+    }
+    return render(request, "reports/yatra.html", context)

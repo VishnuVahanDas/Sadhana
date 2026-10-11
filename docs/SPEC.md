@@ -280,6 +280,8 @@ Filters: period, scope (All / coordinator), field.
 
 ## 8. Rank Table (`/ranks/`)
 
+> Since the October 2026 update (docs/UPDATE-2026-10-bhakti-yatra.md) the rank table is off by default: Sanga Yatra (`/yatra/`) takes its place in the navigation, and `/ranks/` redirects there unless a superuser switches on `rank_table_enabled` in Settings.
+
 Selectors:
 - **Metric (field):** any `is_rankable` field (Hearing, Reading, Seva, Rounds, + any enabled custom numeric/boolean).
 - **Rank by** — all of these are available (agreed "show all"):
@@ -318,7 +320,10 @@ Selectors:
 | `/devotees/` | All | Directory of all users (search, filter by coordinator, active/inactive) |
 | `/u/<id>/` | All | Individual dashboard (§7.3) |
 | `/analysis/` | All | Group/All dashboard (§7.4) |
-| `/ranks/` | All | Rank table (§8) |
+| `/ranks/` | All | Rank table (§8); redirects to `/yatra/` unless `rank_table_enabled` is on |
+| `/yatra/` | All | Sanga Yatra: verse, My Journey, On the road together, Sanga offering |
+| `/manage/festivals/` | Superuser | Festival days |
+| `/manage/yatra/` | Superuser | Vehicle levels and Utsāha levels |
 | `/export/...` | All | Excel downloads for the above |
 | `/manage/users/` | Superuser | List, add, edit, reset password, set coordinator, mark coordinator, active/inactive, superuser toggle |
 | `/manage/users/<id>/fields/` | Superuser | Per-user field toggles |
@@ -327,7 +332,7 @@ Selectors:
 | `/manage/audit/` | Superuser | Filterable audit log (by user, action, date) |
 | `/admin/` | Superuser | Django admin as a backup tool |
 
-Navigation (mobile bottom bar): **Today · My Report · Ranks · Analysis · More** (More → Devotees, Change password, Manage* for superusers, Logout).
+Navigation (mobile bottom bar): **Today · My Report · Sanga Yatra · Analysis · More** (More → Devotees, Change password, Manage* for superusers, Logout).
 
 **Password reset by superuser:** superuser sets a temporary password (or clicks "generate"), shown once on screen to share with the devotee; `must_change_password=True`.
 

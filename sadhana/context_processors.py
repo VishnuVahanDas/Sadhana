@@ -12,4 +12,5 @@ def site(request):
         "theme_color": themes.header_color(theme),
         "themes": themes.THEMES,
         "default_theme_label": dict(themes.CHOICES)[default],
+        "rank_table_enabled": settings.rank_table_enabled,
     }

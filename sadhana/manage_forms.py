@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from accounts.forms import StyledFormMixin
 
 from . import themes
-from .models import AppSettings, Festival, SadhanaField
+from .models import AppSettings, Festival, SadhanaField, UtsahaLevel, VehicleLevel
 
 FieldType = SadhanaField.FieldType
 MEASURABLE = (FieldType.MINUTES, FieldType.COUNT, FieldType.BOOLEAN)
@@ -63,8 +63,10 @@ class AppSettingsForm(StyledFormMixin, forms.ModelForm):
             "site_title", "theme", "day_rollover_hour",
             "edit_lock_enabled", "edit_window_days",
             "backfill_limit_enabled", "backfill_limit_days",
+            "rank_table_enabled",
         ]
         labels = {
+            "rank_table_enabled": _("Rank table: show it again (for special events); otherwise Ranks opens Sanga Yatra"),
             "edit_lock_enabled": _("Edit lock: users cannot change entries older than the edit window"),
             "backfill_limit_enabled": _("Backfill limit: users cannot add entries older than the limit"),
         }
@@ -95,3 +97,34 @@ class FestivalForm(StyledFormMixin, forms.ModelForm):
         if start and end and end < start:
             self.add_error("end_date", _("The end date cannot be before the start date."))
         return cleaned
+
+
+class _LevelForm(StyledFormMixin, forms.ModelForm):
+    """A Bhakti Yatra level. The lowest level starts at 0 and stays there, so every devotee has a level."""
+
+    threshold = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if getattr(self.instance, self.threshold) == 0:
+            self.fields[self.threshold].disabled = True
+            self.fields[self.threshold].help_text = _("The first level always starts at 0.")
+
+
+class VehicleLevelForm(_LevelForm):
+    threshold = "min_rounds"
+    icon = forms.ChoiceField(label=_("Icon"), choices=VehicleLevel.ICONS)
+
+    class Meta:
+        model = VehicleLevel
+        fields = ["name", "min_rounds", "icon", "description"]
+        help_texts = {"min_rounds": _("A devotee gets this vehicle from this 7-day average of rounds upwards.")}
+
+
+class UtsahaLevelForm(_LevelForm):
+    threshold = "min_minutes"
+
+    class Meta:
+        model = UtsahaLevel
+        fields = ["label", "min_minutes", "diya_count", "is_full_flame"]
+        help_texts = {"min_minutes": _("Minutes of hearing, reading and seva in a day, from which this level applies.")}

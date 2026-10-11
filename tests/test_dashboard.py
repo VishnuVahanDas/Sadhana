@@ -62,7 +62,7 @@ def test_summary_cards(client, filled, today):
     assert cards["rounds"]["stats"].total == 40
     assert cards["rounds"]["streaks"].current == 2  # own pages show a Rounds streak: any rounds count
     html = response.content.decode()
-    for text in ["Current streak", "Longest", "On-time current", "On-time longest", "Daily average", "Days filled"]:
+    for text in ["Dhairya", "Longest", "On-time Dhairya", "On-time longest", "Daily average", "Days filled"]:
         assert text in html
 
 

@@ -24,6 +24,8 @@
 {% include "partials/period_chips.html" %}
 {% include "partials/compare_toggle.html" %}
 
+{% if person == user %}{% include "partials/yatra_card.html" with mine=True %}{% else %}{% include "partials/yatra_card.html" with mine=False %}{% endif %}
+
 {% if compare %}
 <section aria-label="{% translate 'Comparison' %}" class="mb-6 space-y-3">
   <h2 class="section-title">{% translate "Compared with the previous period" %}</h2>
@@ -58,7 +60,7 @@
       {% if item.chart %}<div class="mt-3">{% include "partials/chart_card.html" with chart=item.chart %}</div>{% endif %}
     </article>
   {% endfor %}
-  <p class="text-xs text-ink/60">{% translate "Bars are this period; the line is the previous period, lined up day by day. Streaks are not compared: they are live and all-time." %}</p>
+  <p class="text-xs text-ink/60">{% translate "Bars are this period; the line is the previous period, lined up day by day. Dhairya streaks are not compared: they are live and all-time." %}</p>
 </section>
 {% endif %}
 
@@ -113,7 +115,7 @@
             <span class="text-2xl" aria-hidden="true">🔥</span>
             <div class="min-w-0">
               <dd class="streak-number">{{ card.streaks.current }}</dd>
-              <dt>{% translate "Current streak" %}</dt>
+              <dt>{% translate "Dhairya" %}</dt>
               <p>{% translate "Longest" %}: <strong>{{ card.streaks.longest }}</strong></p>
             </div>
           </div>
@@ -121,7 +123,7 @@
             <span class="text-2xl" aria-hidden="true">⏱</span>
             <div class="min-w-0">
               <dd class="streak-number">{{ card.streaks.on_time_current }}</dd>
-              <dt>{% translate "On-time current" %}</dt>
+              <dt>{% translate "On-time Dhairya" %}</dt>
               <p>{% translate "On-time longest" %}: <strong>{{ card.streaks.on_time_longest }}</strong></p>
             </div>
           </div>

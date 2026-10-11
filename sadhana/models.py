@@ -161,6 +161,8 @@ class AppSettings(models.Model):
     site_title = models.CharField(_("site title"), max_length=100, default="Sadhana Report")
     # The default colour theme, for the login page and devotees who have not picked their own (keys in sadhana/themes.py).
     theme = models.CharField(_("theme"), max_length=20, default="saffron")
+    # Off: /ranks/ sends everyone to Sanga Yatra. On for special events such as a Kartik challenge.
+    rank_table_enabled = models.BooleanField(_("rank table enabled"), default=False)
 
     class Meta:
         verbose_name = _("app settings")
@@ -199,3 +201,58 @@ class Festival(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class VehicleLevel(models.Model):
+    """Bhakti Yatra: the vehicle a devotee travels in, from their average rounds over the last 7 days.
+
+    A devotee's vehicle is the highest level whose min_rounds is not above that average.
+    """
+
+    # Keys of the drawings in static/img/yatra/<key>.svg.
+    ICONS = [
+        ("walking", _("Walking")),
+        ("cycle", _("Cycle")),
+        ("bike", _("Bike")),
+        ("three_wheeler", _("Three-wheeler")),
+        ("car", _("Car")),
+        ("train", _("Train")),
+        ("airplane", _("Airplane")),
+        ("vimana", _("Vaikuntha Vimāna")),
+    ]
+
+    min_rounds = models.PositiveIntegerField(_("from (average rounds)"), unique=True)
+    name = models.CharField(_("name"), max_length=60)
+    icon = models.CharField(_("icon"), max_length=40)
+    description = models.CharField(_("description"), max_length=200, blank=True)
+    order = models.PositiveIntegerField(_("order"), default=0)
+
+    class Meta:
+        verbose_name = _("vehicle level")
+        verbose_name_plural = _("vehicle levels")
+        ordering = ["min_rounds"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def icon_path(self):
+        known = {key for key, _label in self.ICONS}
+        return f"img/yatra/{self.icon if self.icon in known else 'walking'}.svg"
+
+
+class UtsahaLevel(models.Model):
+    """Bhakti Yatra: the Utsāha meter, from the minutes of hearing, reading and seva offered in a day."""
+
+    min_minutes = models.PositiveIntegerField(_("from (minutes)"), unique=True)
+    label = models.CharField(_("label"), max_length=60)
+    diya_count = models.PositiveSmallIntegerField(_("diyas lit"), default=0)
+    is_full_flame = models.BooleanField(_("full flame"), default=False)
+
+    class Meta:
+        verbose_name = _("Utsāha level")
+        verbose_name_plural = _("Utsāha levels")
+        ordering = ["min_minutes"]
+
+    def __str__(self):
+        return self.label

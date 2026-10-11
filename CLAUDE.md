@@ -16,6 +16,7 @@ A private, mobile-first Django web app for ISKCON Gorakhpur where ~20–25 devot
 - **Edit lock / backfill limit** are settings toggles, **off by default**; superusers are never restricted.
 - **Audit log**: one row per changed field value; append-only.
 - **Streaks**: Hearing, Reading, Seva (and Mangala Arati when enabled). Rounds has a streak on a devotee's own pages only (Today, My Report; any rounds count), never in ranks or analysis. Show both normal and on-time streaks. Logic lives in pure, unit-tested functions in `sadhana/services/streaks.py`.
+- **Bhakti Yatra** (docs/UPDATE-2026-10-bhakti-yatra.md): rounds give the vehicle (Niścaya), minutes the Utsāha meter, and streaks are labelled Dhairya in the UI. Logic in `sadhana/services/yatra.py`; levels are editable at `/manage/yatra/`. The Sanga Yatra page (`/yatra/`) replaces Ranks in the navigation and never orders devotees by score. The rank table stays in the code behind `AppSettings.rank_table_enabled` (off by default); when off, `/ranks/` redirects to `/yatra/`.
 - **Time:** all "today" logic in `Asia/Kolkata`; weeks start Monday; day rollover hour 4 AM.
 - **Display names:** always `display_name` (spiritual name, else name). Email is login-only.
 - **i18n-ready:** wrap all user-facing strings in `gettext`/`{% translate %}`; English only for now.

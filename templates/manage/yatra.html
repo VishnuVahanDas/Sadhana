@@ -1,0 +1,35 @@
+{% extends "manage/base.html" %}
+{% load static i18n %}
+{% block manage %}
+<h1 class="mb-3 text-xl font-bold text-maroon">{% translate "Bhakti Yatra" %}</h1>
+<p class="mb-3 text-sm text-ink/70">{% translate "These levels only change what is shown. Entries, totals and streaks are never changed." %}</p>
+
+<h2 class="section-title mb-2">{% translate "Vehicles (Niścaya)" %}</h2>
+<p class="mb-2 text-xs text-ink/70">{% translate "From the average rounds over the last 7 days, counting filled days only." %}</p>
+<ul class="mb-6 space-y-2">
+  {% for level in vehicles %}
+    <li class="card flex items-center gap-3">
+      <span class="yatra-icon yatra-icon-sm"><img src="{% static level.icon_path %}" alt=""></span>
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold">{{ level.name }}</p>
+        <p class="text-xs text-ink/70">{% blocktranslate with rounds=level.min_rounds %}From {{ rounds }} rounds{% endblocktranslate %}{% if level.description %} · {{ level.description }}{% endif %}</p>
+      </div>
+      <a href="{% url 'manage_yatra_edit' 'vehicle' level.pk %}" class="btn-secondary">{% translate "Edit" %}</a>
+    </li>
+  {% endfor %}
+</ul>
+
+<h2 class="section-title mb-2">{% translate "Utsāha meter" %}</h2>
+<p class="mb-2 text-xs text-ink/70">{% translate "From the minutes of hearing, reading and seva in a day." %}</p>
+<ul class="space-y-2">
+  {% for level in utsaha_levels %}
+    <li class="card flex items-center gap-3">
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold">{{ level.label }}</p>
+        <p class="text-xs text-ink/70">{% blocktranslate with minutes=level.min_minutes diyas=level.diya_count %}From {{ minutes }} min · {{ diyas }} diyas lit{% endblocktranslate %}{% if level.is_full_flame %} · {% translate "full flame" %}{% endif %}</p>
+      </div>
+      <a href="{% url 'manage_yatra_edit' 'utsaha' level.pk %}" class="btn-secondary">{% translate "Edit" %}</a>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

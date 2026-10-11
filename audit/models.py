@@ -25,6 +25,7 @@ class AuditLog(models.Model):
         FESTIVAL_CREATE = "festival_create", _("Festival created")
         FESTIVAL_UPDATE = "festival_update", _("Festival updated")
         FESTIVAL_DELETE = "festival_delete", _("Festival deleted")
+        YATRA_LEVEL_UPDATE = "yatra_level_update", _("Bhakti Yatra level updated")
 
     timestamp = models.DateTimeField(_("timestamp"), auto_now_add=True)
     actor = models.ForeignKey(

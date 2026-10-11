@@ -16,7 +16,7 @@ from audit.services import get_client_ip
 from .forms import EntryForm
 from .models import AppSettings, SadhanaEntry
 from . import themes
-from .services import analytics, dates, entries, festivals, month_calendar
+from .services import analytics, dates, entries, festivals, month_calendar, yatra
 from .services.fields import effective_fields, has_personal_streak
 
 RECENT_DAYS = 7
@@ -78,6 +78,7 @@ def _entry_page(request, date, app_settings):
     context = {
         "form": form,
         "owner": owner,
+        "owner_is_user": owner == actor,
         "streak_badges": [
             {"field": field, "streaks": analytics.field_streaks(history, field, today)}
             for field in fields
@@ -99,6 +100,8 @@ def _entry_page(request, date, app_settings):
             for day in recent_dates
         ],
         "calendar": _calendar(month, date, set(history), owner, actor, app_settings, today),
+        # Once the day is saved: the vehicle and that day's Utsāha.
+        "journey": yatra.journey(owner, history, yatra.Setup.load(), utsaha_day=date) if existing else None,
     }
     return render(request, "sadhana/entry.html", context)
 

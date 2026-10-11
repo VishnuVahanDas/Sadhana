@@ -19,10 +19,10 @@ class RankBy:
 
 
 OPTIONS = [
-    RankBy("current", _("Current streak"), True),
-    RankBy("longest", _("Longest streak"), True),
-    RankBy("on_time_current", _("On-time current streak"), True),
-    RankBy("on_time_longest", _("On-time longest streak"), True),
+    RankBy("current", _("Dhairya: current streak"), True),
+    RankBy("longest", _("Dhairya: longest streak"), True),
+    RankBy("on_time_current", _("Dhairya: on-time current streak"), True),
+    RankBy("on_time_longest", _("Dhairya: on-time longest streak"), True),
     RankBy("total", _("Total"), False),
     RankBy("daily_average", _("Daily average"), False),
     RankBy("days_filled", _("Days filled"), False),

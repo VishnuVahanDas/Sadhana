@@ -70,3 +70,15 @@ document.addEventListener("click", function (event) {
   table.querySelectorAll("th[aria-sort]").forEach(function (other) { other.removeAttribute("aria-sort"); });
   header.setAttribute("aria-sort", ascending ? "ascending" : "descending");
 });
+
+// Bhakti Yatra: the ⓘ button beside Utsāha, Niścaya and Dhairya opens the explanation.
+document.addEventListener("click", function (event) {
+  var dialog = document.getElementById("yatra-info");
+  if (!dialog) return;
+  if (event.target.closest("[data-yatra-info]")) {
+    if (dialog.showModal) dialog.showModal();
+    else window.location.href = dialog.querySelector("a").href;
+  } else if (event.target.closest("[data-yatra-info-close]") || event.target === dialog) {
+    dialog.close();
+  }
+});

@@ -7,13 +7,19 @@ from django.utils import timezone
 from openpyxl import load_workbook
 
 from accounts.models import User
-from sadhana.models import EntryValue, SadhanaEntry
+from sadhana.models import AppSettings, EntryValue, SadhanaEntry
 from sadhana.services import analytics, periods
 
 
 @pytest.fixture
 def today(db):
     return timezone.localdate()
+
+
+@pytest.fixture(autouse=True)
+def rank_table_on(db):
+    """The rank table is off by default (Sanga Yatra replaces it); these tests are about the table itself."""
+    AppSettings.objects.update_or_create(pk=1, defaults={"rank_table_enabled": True})
 
 
 @pytest.fixture
@@ -128,7 +134,8 @@ def test_analysis_export(client, group):
     client.force_login(group["solo"])
     rows = sheet_rows(client.get(reverse("analysis_export"), {"coordinator": group["madhava"].pk}))
     header = rows.index(
-        ["Name", "Coordinator", "Total", "Daily average", "Typical day", "Days filled", "Current streak", "On-time streak"]
+        ["Name", "Coordinator", "Total", "Daily average", "Typical day", "Days filled",
+         "Dhairya (current streak)", "Dhairya (on-time streak)"]
     )
     assert rows[0][0] == "Hearing — Madhava Das"
     # Sorted by total; Arjuna and Madhava Das tie on 90 and are then ordered by name.
@@ -169,7 +176,7 @@ def test_streak_options_hidden_for_rounds(client, group):
     response = client.get(reverse("ranks"), {"metric": "rounds", "by": "current"})
     assert [option.key for option in response.context["options"]] == ["total", "daily_average", "days_filled"]
     assert response.context["option"].key == "total"
-    assert "Current streak" not in response.content.decode()
+    assert 'value="current"' not in response.content.decode()
     assert ranked(response) == [(1, "Madhava Das", 32), (2, "Arjuna", 16), (3, "Bhima", 8), (4, "Solo", 4)]
 
 

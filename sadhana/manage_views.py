@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, Exists, Max, OuterRef
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
@@ -10,8 +11,8 @@ from accounts.decorators import superuser_required
 from audit import services as audit
 from audit.models import AuditLog
 
-from .manage_forms import AppSettingsForm, FestivalForm, SadhanaFieldForm
-from .models import AppSettings, EntryValue, Festival, SadhanaField, UserFieldSetting
+from .manage_forms import AppSettingsForm, FestivalForm, SadhanaFieldForm, UtsahaLevelForm, VehicleLevelForm
+from .models import AppSettings, EntryValue, Festival, SadhanaField, UserFieldSetting, UtsahaLevel, VehicleLevel
 
 Action = AuditLog.Action
 
@@ -276,3 +277,31 @@ def festival_delete(request, pk):
     festival.delete()
     messages.success(request, _("“%(name)s” has been deleted.") % {"name": festival.name})
     return redirect("manage_festivals")
+
+
+# --- Bhakti Yatra levels ---------------------------------------------------
+
+# kind in the URL -> (model, form). Levels are edited, never added or deleted.
+YATRA_LEVELS = {"vehicle": (VehicleLevel, VehicleLevelForm), "utsaha": (UtsahaLevel, UtsahaLevelForm)}
+
+
+@superuser_required
+def yatra_levels(request):
+    context = {"vehicles": VehicleLevel.objects.all(), "utsaha_levels": UtsahaLevel.objects.all()}
+    return render(request, "manage/yatra.html", context)
+
+
+@superuser_required
+def yatra_level_edit(request, kind, pk):
+    if kind not in YATRA_LEVELS:
+        raise Http404
+    model, form_class = YATRA_LEVELS[kind]
+    level = get_object_or_404(model, pk=pk)
+    form = form_class(request.POST or None, instance=level)
+    before = {name: getattr(level, name) for name in form.fields}
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        _log_changes(request, Action.YATRA_LEVEL_UPDATE, form, before, field_key=f"{kind}:{level.pk}")
+        messages.success(request, _("“%(name)s” has been saved.") % {"name": level})
+        return redirect("manage_yatra")
+    return render(request, "manage/yatra_form.html", {"form": form, "level": level})

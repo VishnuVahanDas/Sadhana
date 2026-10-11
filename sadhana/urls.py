@@ -23,5 +23,7 @@ urlpatterns = [
     path("manage/festivals/add/", manage_views.festival_edit, name="manage_festival_add"),
     path("manage/festivals/<int:pk>/", manage_views.festival_edit, name="manage_festival_edit"),
     path("manage/festivals/<int:pk>/delete/", manage_views.festival_delete, name="manage_festival_delete"),
+    path("manage/yatra/", manage_views.yatra_levels, name="manage_yatra"),
+    path("manage/yatra/<str:kind>/<int:pk>/", manage_views.yatra_level_edit, name="manage_yatra_edit"),
     path("manage/theme/reset/", manage_views.reset_user_themes, name="manage_theme_reset"),
 ]

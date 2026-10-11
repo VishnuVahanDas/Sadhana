@@ -1,0 +1,54 @@
+{% load static i18n %}
+{# Bhakti Yatra card for one devotee: `journey` from sadhana/services/yatra.py. `mine` = it is the reader's own. #}
+<section class="card stat-card mb-4" aria-label="{% translate 'Bhakti Yatra' %}">
+  <div class="mb-2 flex items-center justify-between gap-2">
+    <h2 class="text-base font-bold text-maroon">{% translate "Bhakti Yatra" %}</h2>
+    <button type="button" class="info-btn" data-yatra-info aria-label="{% translate 'What do Utsāha, Niścaya and Dhairya mean?' %}">ⓘ</button>
+  </div>
+
+  <div class="flex items-center gap-3">
+    {% if journey.vehicle.started %}
+      <span class="yatra-icon"><img src="{% static journey.vehicle.level.icon_path %}" alt=""></span>
+    {% else %}
+      <span class="yatra-icon"><img src="{% static 'img/yatra/walking.svg' %}" alt=""></span>
+    {% endif %}
+    <div class="min-w-0">
+      <p class="text-xs text-ink/70">{% translate "Niścaya" %} · {% if mine %}{% translate "My vehicle" %}{% else %}{% translate "Vehicle" %}{% endif %}</p>
+      {% if journey.vehicle.started %}
+        <p class="font-serif text-lg font-bold leading-tight">{{ journey.vehicle.level.name }}</p>
+        {% if journey.vehicle.level.description %}<p class="text-sm text-ink/80">{{ journey.vehicle.level.description }}</p>{% endif %}
+        <p class="text-xs text-ink/60">{% blocktranslate with average=journey.vehicle.average count days=journey.vehicle.filled_days %}Average {{ average }} rounds over {{ days }} filled day of the last 7{% plural %}Average {{ average }} rounds over {{ days }} filled days of the last 7{% endblocktranslate %}</p>
+      {% else %}
+        <p class="font-serif text-lg font-bold leading-tight">{% translate "Starting the journey" %}</p>
+        <p class="text-xs text-ink/60">{% blocktranslate with days=journey.vehicle.filled_days %}The vehicle appears once rounds are filled on 3 of the last 7 days ({{ days }} so far).{% endblocktranslate %}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <dl class="mt-3 space-y-2 border-t border-cream-dark pt-3 text-sm">
+    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+      <dt class="text-ink/70">{% translate "Utsāha" %} · {% if journey.utsaha_is_today %}{% translate "today" %}{% else %}{{ journey.utsaha_day|date:"j M" }}{% endif %}</dt>
+      <dd class="flex items-center gap-2 font-medium">
+        {% include "partials/utsaha_meter.html" with utsaha=journey.utsaha %}
+        <span>{{ journey.utsaha.level.label }} <span class="font-normal text-ink/70">({% blocktranslate with minutes=journey.utsaha.minutes %}{{ minutes }} min offered{% endblocktranslate %})</span></span>
+      </dd>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+      <dt class="text-ink/70">{% translate "Utsāha" %} · {% translate "last 7 days" %}</dt>
+      <dd class="flex items-center gap-2 font-medium">
+        {% include "partials/utsaha_meter.html" with utsaha=journey.week_utsaha %}
+        <span class="font-normal text-ink/70">{% blocktranslate with minutes=journey.week_utsaha.minutes %}{{ minutes }} min a day on average{% endblocktranslate %}</span>
+      </dd>
+    </div>
+    {% if journey.dhairya %}
+      <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <dt class="text-ink/70">{% translate "Dhairya" %}</dt>
+        <dd class="flex flex-wrap gap-x-3 gap-y-1 font-medium">
+          {% for item in journey.dhairya %}
+            <span title="{% blocktranslate with longest=item.streaks.longest on_time=item.streaks.on_time_current %}Longest {{ longest }} · on time {{ on_time }}{% endblocktranslate %}">{{ item.field.label }} 🔥 {{ item.streaks.current }}</span>
+          {% endfor %}
+        </dd>
+      </div>
+    {% endif %}
+  </dl>
+</section>

@@ -77,7 +77,7 @@ def test_layout_shows_display_name_and_bottom_nav(client, make_user):
     html = client.get(reverse("home")).content.decode()
     assert "Govinda Das" in html
     assert user.email not in html
-    for label in ["Today", "My Report", "Ranks", "Analysis", "More", "Devotees", "Logout"]:
+    for label in ["Today", "My Report", "Sanga Yatra", "Analysis", "More", "Devotees", "Logout"]:
         assert label in html
     assert 'aria-current="page"' in html
 

@@ -1,0 +1,24 @@
+{% load i18n %}
+{# Opened by any [data-yatra-info] button (app.js). #}
+<dialog id="yatra-info" class="yatra-dialog" aria-labelledby="yatra-info-title">
+  <h2 id="yatra-info-title" class="mb-2 font-serif text-lg font-bold text-maroon">{% translate "Bhakti Yatra" %}</h2>
+  <p class="mb-3 text-sm text-ink/80">{% translate "Three words from Śrī Upadeśāmṛta, Text 3, describe the journey:" %}</p>
+  <dl class="space-y-3 text-sm">
+    <div>
+      <dt class="font-semibold">{% translate "Utsāha — enthusiasm" %}</dt>
+      <dd class="text-ink/80">{% translate "The minutes of hearing, reading and seva offered in a day light the diya meter." %}</dd>
+    </div>
+    <div>
+      <dt class="font-semibold">{% translate "Niścaya — firm confidence" %}</dt>
+      <dd class="text-ink/80">{% translate "The vehicle comes from the average rounds over the last 7 days, counting only the days that were filled. It shows steadiness, not one big day." %}</dd>
+    </div>
+    <div>
+      <dt class="font-semibold">{% translate "Dhairya — patience" %}</dt>
+      <dd class="text-ink/80">{% translate "The streaks: how many days in a row each practice has been kept up." %}</dd>
+    </div>
+  </dl>
+  <div class="mt-4 flex flex-wrap gap-2">
+    <a href="{% url 'yatra' %}#verse" class="btn-secondary">{% translate "Read the verse" %}</a>
+    <button type="button" class="btn-secondary" data-yatra-info-close>{% translate "Close" %}</button>
+  </div>
+</dialog>

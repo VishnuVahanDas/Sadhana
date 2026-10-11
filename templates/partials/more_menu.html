@@ -5,6 +5,7 @@
     <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-cream-dark" aria-hidden="true"></div>
     <p class="mb-2 px-3 font-serif text-lg font-bold text-maroon">{{ user.display_name }}</p>
     <a href="{% url 'sheet' %}" class="sheet-link">{% translate "Sheet (all devotees)" %}</a>
+    {% if rank_table_enabled %}<a href="{% url 'ranks' %}" class="sheet-link">{% translate "Rank table" %}</a>{% endif %}
     <a href="{% url 'devotees' %}" class="sheet-link">{% translate "Devotees" %}</a>
     <a href="{% url 'password_change' %}" class="sheet-link">{% translate "Change password" %}</a>
     {% if user.is_superuser %}
@@ -12,6 +13,7 @@
       <a href="{% url 'manage_users' %}" class="sheet-link">{% translate "Users" %}</a>
       <a href="{% url 'manage_fields' %}" class="sheet-link">{% translate "Fields" %}</a>
       <a href="{% url 'manage_festivals' %}" class="sheet-link">{% translate "Festivals" %}</a>
+      <a href="{% url 'manage_yatra' %}" class="sheet-link">{% translate "Bhakti Yatra" %}</a>
       <a href="{% url 'manage_settings' %}" class="sheet-link">{% translate "Settings" %}</a>
       <a href="{% url 'manage_audit' %}" class="sheet-link">{% translate "Audit log" %}</a>
     {% endif %}

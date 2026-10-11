@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Sanga Yatra" %} · {{ site_title }}{% endblock %}
+{% block content %}
+<div class="mb-3 flex items-center justify-between gap-2">
+  <h1 class="section-title !text-2xl">{% translate "Sanga Yatra" %}</h1>
+  {% if rank_table_enabled %}<a href="{% url 'ranks' %}" class="btn-secondary">{% translate "Rank table" %}</a>{% endif %}
+</div>
+
+<section id="verse" class="hero mb-4 scroll-mt-20 text-center" aria-label="{% translate 'Verse' %}">
+  <p class="font-serif text-lg font-bold leading-relaxed" lang="sa">उत्साहान्निश्चयाद्धैर्यात् तत्तत्कर्मप्रवर्तनात् ।<br>सङ्गत्यागात्सतो वृत्तेः षड्भिर्भक्तिः प्रसिध्यति ॥</p>
+  <p class="mt-2 text-sm italic text-bar-ink/90" lang="sa-Latn">utsāhān niścayād dhairyāt<br>tat-tat-karma-pravartanāt<br>saṅga-tyāgāt sato vṛtteḥ<br>ṣaḍbhir bhaktiḥ prasidhyati</p>
+  <p class="mt-2 text-xs text-bar-ink/80">{% translate "Śrī Upadeśāmṛta (The Nectar of Instruction), Text 3 — Śrīla Rūpa Gosvāmī" %}</p>
+</section>
+
+<section class="card mb-6" aria-label="{% translate 'Meaning' %}">
+  <p class="text-sm">{% translate "Devotional service becomes successful through six things: enthusiasm, firm confidence, patience, carrying out the prescribed practices, giving up association unfavourable to bhakti, and following the example of saintly devotees." %}</p>
+  <div class="mt-3 overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="text-xs uppercase tracking-wide text-ink/60">
+        <tr>
+          <th class="py-1 pr-3 font-medium">{% translate "Sanskrit" %}</th>
+          <th class="py-1 pr-3 font-medium">{% translate "Meaning" %}</th>
+          <th class="py-1 font-medium">{% translate "In the app" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-cream-dark align-top">
+        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">utsāha</th><td class="py-2 pr-3">{% translate "Enthusiasm" %}</td><td class="py-2">{% translate "Today's Utsāha meter (minutes offered)" %}</td></tr>
+        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">niścaya</th><td class="py-2 pr-3">{% translate "Firm confidence, steady commitment" %}</td><td class="py-2">{% translate "My vehicle (7-day rounds)" %}</td></tr>
+        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">dhairya</th><td class="py-2 pr-3">{% translate "Patience" %}</td><td class="py-2">{% translate "Dhairya streaks" %}</td></tr>
+        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">tat-tat-karma-pravartana</th><td class="py-2 pr-3">{% translate "Carrying out the practices" %}</td><td class="py-2">{% translate "The daily sadhana entry" %}</td></tr>
+        <tr><th scope="row" class="py-2 pr-3 font-semibold italic">sato vṛtti</th><td class="py-2 pr-3">{% translate "Following saintly devotees" %}</td><td class="py-2">{% translate "Travelling together on Sanga Yatra" %}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="mb-6" aria-label="{% translate 'My Journey' %}">
+  <h2 class="section-title mb-2">{% translate "My Journey" %}</h2>
+  {% include "partials/yatra_card.html" with mine=True %}
+  {% if longest_dhairya or best_day %}
+    <ul class="card space-y-1 text-sm">
+      {% if longest_dhairya %}
+        <li>🏵 {% blocktranslate with field=longest_dhairya.field.label count days=longest_dhairya.streaks.longest %}Longest Dhairya: <strong>{{ days }} day</strong> ({{ field }}){% plural %}Longest Dhairya: <strong>{{ days }} days</strong> ({{ field }}){% endblocktranslate %}</li>
+      {% endif %}
+      {% if best_day %}
+        <li>🪔 {% blocktranslate with minutes=best_day.1 day=best_day.0|date:"j M" %}Best Utsāha day this month: <strong>{{ minutes }} min</strong> on {{ day }}{% endblocktranslate %}</li>
+      {% endif %}
+    </ul>
+  {% endif %}
+</section>
+
+<section class="mb-6" aria-label="{% translate 'On the road together' %}">
+  <h2 class="section-title mb-2">{% translate "On the road together" %}</h2>
+  <div class="space-y-3">
+    {% for group in groups %}
+      <article class="card">
+        <div class="mb-2 flex items-center gap-3">
+          {% if group.level %}
+            <span class="yatra-icon yatra-icon-sm"><img src="{% static group.level.icon_path %}" alt=""></span>
+            <h3 class="font-serif text-base font-bold">{{ group.level.name }}</h3>
+          {% else %}
+            <span class="yatra-icon yatra-icon-sm"><img src="{% static 'img/yatra/walking.svg' %}" alt=""></span>
+            <h3 class="font-serif text-base font-bold">{% translate "Starting the journey" %}</h3>
+          {% endif %}
+          <span class="ml-auto text-xs text-ink/60">{{ group.people|length }}</span>
+        </div>
+        <ul class="flex flex-wrap gap-2">
+          {% for item in group.people %}
+            <li><a href="{% url 'dashboard' item.user.pk %}" class="inline-flex min-h-[44px] items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm font-medium {% if item.user == user %}bg-gold/25{% else %}bg-cream{% endif %}"><span class="avatar avatar-xs" aria-hidden="true">{{ item.user.display_name|first|upper }}</span>{{ item.user.display_name }}{% if item.flame %} <span class="whitespace-nowrap text-ink/70" title="{% translate 'Dhairya: days in a row with hearing, reading and seva all done' %}">🔥 {{ item.flame }}</span>{% endif %}</a></li>
+          {% endfor %}
+        </ul>
+      </article>
+    {% empty %}
+      <p class="card text-sm text-ink/70">{% translate "No active devotees yet." %}</p>
+    {% endfor %}
+  </div>
+  <p class="mt-2 text-xs text-ink/60">{% translate "Names are in alphabetical order. 🔥 is Dhairya: days in a row with hearing, reading and seva all done." %}</p>
+</section>
+
+<section aria-label="{% translate 'Sanga offering' %}">
+  <h2 class="section-title mb-2">{% translate "Sanga offering" %}</h2>
+  <div class="card">
+    <p class="mb-2 text-sm text-ink/80">{% translate "Together the sanga offered this much hearing, reading and seva:" %}</p>
+    <dl class="grid grid-cols-3 gap-2 text-center">
+      {% for item in offerings %}
+        <div class="stat-tile">
+          <dd>{{ item.hours }}<span class="text-xs font-normal"> h</span>{% if item.minutes %} {{ item.minutes }}<span class="text-xs font-normal"> min</span>{% endif %}</dd>
+          <dt>{{ item.label }}</dt>
+        </div>
+      {% endfor %}
+    </dl>
+  </div>
+</section>
+{% endblock %}

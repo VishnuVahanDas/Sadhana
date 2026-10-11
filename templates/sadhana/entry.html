@@ -38,15 +38,19 @@
   </div>
 </div>
 
+{% if journey %}{% include "partials/yatra_card.html" with mine=owner_is_user %}{% endif %}
+
 {% if streak_badges %}
-  <ul class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="{% translate 'Streaks' %}">
+  <p class="mb-1 flex items-center gap-1 text-sm font-semibold text-maroon">{% translate "Dhairya" %} <span class="font-normal text-ink/60">· {% translate "days in a row" %}</span>
+    <button type="button" class="info-btn" data-yatra-info aria-label="{% translate 'What do Utsāha, Niścaya and Dhairya mean?' %}">ⓘ</button></p>
+  <ul class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="{% translate 'Dhairya' %}">
     {% for badge in streak_badges %}
       <li class="streak-tile">
         <span class="text-2xl" aria-hidden="true">🔥</span>
         <div class="min-w-0">
-          <strong class="streak-number block" title="{% translate 'Current streak' %}">{{ badge.streaks.current }}</strong>
+          <strong class="streak-number block" title="{% translate 'Dhairya: current streak' %}">{{ badge.streaks.current }}</strong>
           <p class="truncate !text-xs font-medium !text-ink">{{ badge.field.label }}</p>
-          <p title="{% translate 'On-time current streak' %}">⏱ {{ badge.streaks.on_time_current }}</p>
+          <p title="{% translate 'Dhairya: on-time current streak' %}">⏱ {{ badge.streaks.on_time_current }}</p>
         </div>
       </li>
     {% endfor %}

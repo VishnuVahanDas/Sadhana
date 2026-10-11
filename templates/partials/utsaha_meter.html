@@ -1,0 +1,6 @@
+{% load i18n %}
+{# The diya meter for one Utsaha (sadhana/services/yatra.py). The label and the minutes are written beside it. #}
+<span class="inline-flex items-center gap-0.5 align-middle" role="img" aria-label="{{ utsaha.level.label }}">
+  {% if utsaha.is_full_flame %}<span class="diya" aria-hidden="true">🔥</span>{% endif %}
+  {% for lit in utsaha.diyas %}<span class="diya {% if not lit %}diya-off{% endif %}" aria-hidden="true">🪔</span>{% endfor %}
+</span>
