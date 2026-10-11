@@ -54,6 +54,8 @@ def _scale(field):
     """(clean axis steps, floor) for a field's "usual range" cap."""
     if field.field_type == SadhanaField.FieldType.MINUTES:
         return scaling.MINUTE_STEPS, field.target or scaling.MINUTE_FLOOR
+    if field.field_type == SadhanaField.FieldType.COUNT:
+        return scaling.COUNT_STEPS, field.target or scaling.COUNT_FLOOR
     return scaling.COUNT_STEPS, field.target
 
 
@@ -502,14 +504,17 @@ def analysis_export(request):
         compare = _analysis_comparison(
             request, period, people, field, days_by_user, rows, today, days_key, festival_days, day_filter
         )
-    headers = [_("Name"), _("Coordinator"), _("Total"), _("Daily average"), _("Days filled")]
+    headers = [_("Name"), _("Coordinator"), _("Total"), _("Daily average"), _("Typical day"), _("Days filled")]
     if field and field.has_streak:
         headers += [_("Current streak"), _("On-time streak")]
     if compare:
         headers += [_("Previous daily average"), _("Change"), _("Change %")]
     data = []
     for row in rows:
-        line = [row.user.display_name, _coordinator_name(row.user), row.stats.total, row.stats.daily_average, row.stats.days_filled]
+        line = [
+            row.user.display_name, _coordinator_name(row.user),
+            row.stats.total, row.stats.daily_average, row.stats.typical_day, row.stats.days_filled,
+        ]
         if row.streaks:
             line += [row.streaks.current, row.streaks.on_time_current]
         if compare:

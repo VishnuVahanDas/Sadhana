@@ -190,6 +190,7 @@ class Festival(models.Model):
         verbose_name = _("festival")
         verbose_name_plural = _("festivals")
         ordering = ["-start_date", "name"]
+        indexes = [models.Index(fields=["start_date", "end_date"], name="festival_dates_idx")]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(end_date__gte=models.F("start_date")), name="festival_ends_on_or_after_start"

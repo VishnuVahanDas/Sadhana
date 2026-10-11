@@ -122,6 +122,7 @@
           <th class="sort-header" data-sort="text">{% translate "Coordinator" %}</th>
           <th class="sort-header" data-sort="number" aria-sort="descending">{% translate "Total" %}</th>
           <th class="sort-header" data-sort="number">{% translate "Daily avg" %}</th>
+          <th class="sort-header" data-sort="number" title="{% translate 'The middle value of the daily numbers, so one very long day does not move it.' %}">{% translate "Typical day" %}</th>
           <th class="sort-header" data-sort="number">{% translate "Days filled" %}</th>
           {% if compare %}
             <th class="sort-header" data-sort="number">{% translate "Previous avg" %}</th>
@@ -141,6 +142,7 @@
             {# Shaded against the group: the darker the cell, the higher the number. #}
             <td class="px-3 py-2 font-semibold tabular-nums shade-{{ total_level }}">{{ row.stats.total }}</td>
             <td class="px-3 py-2 font-semibold tabular-nums shade-{{ average_level }}">{{ row.stats.daily_average }}</td>
+            <td class="px-3 py-2 tabular-nums">{{ row.stats.typical_day }}</td>
             <td class="px-3 py-2">{{ row.stats.days_filled }}</td>
             {% if compare %}
               <td class="px-3 py-2 tabular-nums">{% if change.previous is None %}—{% else %}{{ change.previous }}{% endif %}</td>
@@ -153,7 +155,7 @@
             {% endif %}
           </tr>
         {% empty %}
-          <tr><td colspan="9" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
+          <tr><td colspan="10" class="px-3 py-3 text-ink/70">{% translate "No active devotees in this group." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

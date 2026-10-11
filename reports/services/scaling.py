@@ -16,6 +16,7 @@ ROLLING_WINDOW = 7
 MINUTE_STEPS = [60, 90, 120, 150, 180, 240, 300, 360, 480, 600, 720, 960, 1200, 1440]
 COUNT_STEPS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64, 80, 100]
 MINUTE_FLOOR = 60
+COUNT_FLOOR = 16
 
 
 def percentile(values, percent):

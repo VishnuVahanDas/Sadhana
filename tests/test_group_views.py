@@ -127,13 +127,15 @@ def test_not_filled_today(client, group):
 def test_analysis_export(client, group):
     client.force_login(group["solo"])
     rows = sheet_rows(client.get(reverse("analysis_export"), {"coordinator": group["madhava"].pk}))
-    header = rows.index(["Name", "Coordinator", "Total", "Daily average", "Days filled", "Current streak", "On-time streak"])
+    header = rows.index(
+        ["Name", "Coordinator", "Total", "Daily average", "Typical day", "Days filled", "Current streak", "On-time streak"]
+    )
     assert rows[0][0] == "Hearing — Madhava Das"
     # Sorted by total; Arjuna and Madhava Das tie on 90 and are then ordered by name.
     assert rows[header + 1:] == [
-        ["Arjuna", "Madhava Das", 90, round(90 / 7, 1), 1, 1, 1],
-        ["Madhava Das", None, 90, round(90 / 7, 1), 2, 2, 2],
-        ["Bhima", "Madhava Das", 30, round(30 / 7, 1), 1, 1, 1],
+        ["Arjuna", "Madhava Das", 90, round(90 / 7, 1), 0, 1, 1, 1],
+        ["Madhava Das", None, 90, round(90 / 7, 1), 0, 2, 2, 2],
+        ["Bhima", "Madhava Das", 30, round(30 / 7, 1), 0, 1, 1, 1],
     ]
 
 

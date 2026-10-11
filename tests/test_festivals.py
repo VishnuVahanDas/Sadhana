@@ -9,7 +9,7 @@ from openpyxl import load_workbook
 
 from accounts.models import User
 from audit.models import AuditLog
-from sadhana.models import EntryValue, Festival, SadhanaEntry
+from sadhana.models import EntryValue, Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, festivals, periods
 
 
@@ -203,11 +203,11 @@ def test_exports_contain_real_unclipped_values(client, festival_week, today):
     assert max(row[seva_column] for row in entries[header + 1:]) == 300
 
     analysis = rows("analysis_export", field="seva", period="last_10")
-    # Columns: name, coordinator, total, daily average, days filled, current streak, on-time streak.
+    # Columns: name, coordinator, total, daily average, typical day, days filled, current streak, on-time streak.
     # (The fixture's older entries were all created today, so only two days count as on time.)
-    assert ["Arjuna", None, 840, 84.0, 10, 10, 2] in analysis
+    assert ["Arjuna", None, 840, 84.0, 60, 10, 10, 2] in analysis
     regular = rows("analysis_export", field="seva", period="last_10", days="regular")
-    assert ["Arjuna", None, 540, 60.0, 9, 10, 2] in regular
+    assert ["Arjuna", None, 540, 60.0, 60, 9, 10, 2] in regular
     assert any(row[0] == "Regular days only" for row in regular)
 
     ranks = rows("ranks_export", metric="seva", period="last_10")
@@ -251,3 +251,25 @@ def test_field_target_is_seeded_and_editable(client, superuser, field):
     assert field("rounds").target == 16 and field("hearing").target is None
     client.force_login(superuser)
     assert 'name="target"' in client.get(reverse("manage_field_edit", args=[field("rounds").pk])).content.decode()
+
+
+def test_analysis_table_shows_the_typical_day(client, festival_week):
+    client.force_login(festival_week[0])
+    response = client.get(reverse("analysis"), {"field": "seva", "period": "last_10"})
+    assert "Typical day" in response.content.decode()
+    assert {row.stats.typical_day for row in response.context["rows"]} == {60}
+
+
+def test_count_field_without_a_target_never_zooms_below_sixteen(client, make_user, today):
+    """A custom count field has no target of its own: its chart still keeps the floor of 16."""
+    person = make_user()
+    User.objects.update(date_joined=timezone.now() - timedelta(days=365))
+    malas = SadhanaField.objects.create(key="malas", label="Malas", field_type="count", is_rankable=True)
+    for days_ago in range(10):
+        entry = SadhanaEntry.objects.create(user=person, date=today - timedelta(days=days_ago))
+        EntryValue.objects.create(entry=entry, field=malas, value_int=64 if days_ago == 4 else 4)
+    client.force_login(person)
+    response = client.get(reverse("dashboard", args=[person.pk]), {"period": "last_10"})
+    chart = next(chart for chart in response.context["charts"] if chart["title"] == "Malas")
+    assert chart["cap"] == 16
+    assert [day["value"] for day in chart["clipped"]] == [64]
