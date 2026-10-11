@@ -18,8 +18,8 @@ MINUTES = [HEARING, READING, SEVA]
 VEHICLES = [
     SimpleNamespace(min_rounds=rounds, name=name)
     for rounds, name in [
-        (0, "Padayatra"), (4, "Cycle"), (8, "Bike"), (12, "Three-wheeler"),
-        (16, "Car"), (32, "Train"), (48, "Airplane"), (64, "Vaikuntha Vimāna"),
+        (0, "Padayātrī"), (4, "Bail-gāḍī"), (8, "Naukā"), (12, "Pālkī"),
+        (16, "Ratha"), (32, "Haṁsa"), (48, "Puṣpaka Vimāna"), (64, "Vaikuṇṭha Vimāna"),
     ]
 ]
 UTSAHA = [
@@ -46,7 +46,7 @@ def test_vehicle_averages_the_filled_days_only():
     # Three filled days of 16; the four missed days do not pull the average down.
     days = days_of((0, {ROUNDS: 16}), (2, {ROUNDS: 16}), (5, {ROUNDS: 16}))
     vehicle = yatra.vehicle_for(yatra.recent_rounds(days, ROUNDS, TODAY), VEHICLES)
-    assert (vehicle.level.name, vehicle.average, vehicle.filled_days) == ("Car", 16.0, 3)
+    assert (vehicle.level.name, vehicle.average, vehicle.filled_days) == ("Ratha", 16.0, 3)
 
 
 def test_an_entry_without_rounds_is_not_a_filled_day():
@@ -70,11 +70,11 @@ def test_fewer_than_three_filled_days_is_starting_the_journey():
 @pytest.mark.parametrize(
     "rounds, name",
     [
-        ([0, 0, 0], "Padayatra"), ([3, 3, 3], "Padayatra"), ([4, 4, 4], "Cycle"), ([4, 4, 3], "Padayatra"),
-        ([7, 7, 7], "Cycle"), ([8, 8, 8], "Bike"), ([11, 11, 11], "Bike"), ([12, 12, 12], "Three-wheeler"),
-        ([15, 15, 15], "Three-wheeler"), ([16, 16, 15], "Three-wheeler"), ([16, 16, 16], "Car"),
-        ([31, 31, 31], "Car"), ([32, 32, 32], "Train"), ([47, 47, 47], "Train"), ([48, 48, 48], "Airplane"),
-        ([63, 63, 63], "Airplane"), ([64, 64, 64], "Vaikuntha Vimāna"), ([108, 108, 108], "Vaikuntha Vimāna"),
+        ([0, 0, 0], "Padayātrī"), ([3, 3, 3], "Padayātrī"), ([4, 4, 4], "Bail-gāḍī"), ([4, 4, 3], "Padayātrī"),
+        ([7, 7, 7], "Bail-gāḍī"), ([8, 8, 8], "Naukā"), ([11, 11, 11], "Naukā"), ([12, 12, 12], "Pālkī"),
+        ([15, 15, 15], "Pālkī"), ([16, 16, 15], "Pālkī"), ([16, 16, 16], "Ratha"),
+        ([31, 31, 31], "Ratha"), ([32, 32, 32], "Haṁsa"), ([47, 47, 47], "Haṁsa"), ([48, 48, 48], "Puṣpaka Vimāna"),
+        ([63, 63, 63], "Puṣpaka Vimāna"), ([64, 64, 64], "Vaikuṇṭha Vimāna"), ([108, 108, 108], "Vaikuṇṭha Vimāna"),
     ],
 )
 def test_vehicle_thresholds(rounds, name):
@@ -138,7 +138,7 @@ def log(field, today):
 
 @pytest.fixture
 def sanga(make_user, log):
-    """Zara and Arjuna in a car, Bhima on foot, a newcomer, and an inactive devotee in the vimāna."""
+    """Zara and Arjuna in a ratha, Bhima on foot, a newcomer, and an inactive devotee in the vimāna."""
     people = {
         "zara": make_user(email="z@example.com", name="Zara", ui_mode="advanced"),
         "arjuna": make_user(email="a@example.com", name="Arjuna"),
@@ -164,8 +164,8 @@ def test_levels_are_seeded(db):
 
 
 def test_my_vehicle_and_sanga_offering(sanga, today):
-    assert yatra.my_vehicle(sanga["zara"], today).level.name == "Car"
-    assert yatra.my_vehicle(sanga["bhima"], today).level.name == "Padayatra"
+    assert yatra.my_vehicle(sanga["zara"], today).level.name == "Ratha"
+    assert yatra.my_vehicle(sanga["bhima"], today).level.name == "Padayātrī"
     assert not yatra.my_vehicle(sanga["new"], today).started
     assert yatra.utsaha(90).level.label == "Three diyas"
     people = [person for person in sanga.values() if person.is_participating]
@@ -184,7 +184,7 @@ def test_sanga_yatra_page(client, sanga):
         for group in response.context["groups"]
     ]
     # Grouped by vehicle, alphabetical inside each group, and no inactive devotee.
-    assert groups == [(None, ["Nava"]), ("Padayatra", ["Bhima"]), ("Car", ["Arjuna", "Zara"])]
+    assert groups == [(None, ["Nava"]), ("Padayātrī", ["Bhima"]), ("Ratha", ["Arjuna", "Zara"])]
     html = response.content.decode()
     assert "Gone" not in html
     for text in ["utsāhān niścayād dhairyāt", "Firm confidence, steady commitment", "My Journey",
@@ -199,7 +199,7 @@ def test_sanga_yatra_page(client, sanga):
 def test_inactive_devotee_still_sees_their_own_journey(client, sanga):
     client.force_login(sanga["gone"])
     response = client.get(reverse("yatra"))
-    assert response.context["journey"].vehicle.level.name == "Vaikuntha Vimāna"
+    assert response.context["journey"].vehicle.level.name == "Vaikuṇṭha Vimāna"
     assert "Gone" not in [item["user"].display_name for group in response.context["groups"] for item in group["people"]]
 
 
@@ -230,9 +230,9 @@ def test_cards_on_today_and_my_report(client, sanga, today):
     saved = client.get(reverse("entry", args=[today])).content.decode()
     assert "Starting the journey" in saved and "15 min offered" in saved and "Dhairya" in saved
     report = client.get(reverse("dashboard", args=[sanga["zara"].pk]))
-    assert report.context["journey"].vehicle.level.name == "Car"
+    assert report.context["journey"].vehicle.level.name == "Ratha"
     html = report.content.decode()
-    assert "img/yatra/car" in html and "Current streak" not in html
+    assert "img/yatra/ratha" in html and "Current streak" not in html
 
 
 def test_manage_yatra_levels(client, superuser, user):
@@ -245,7 +245,7 @@ def test_manage_yatra_levels(client, superuser, user):
     client.force_login(superuser)
     assert client.get(reverse("manage_yatra")).status_code == 200
     assert client.get(reverse("manage_yatra_edit", args=["nonsense", car.pk])).status_code == 404
-    data = {"name": "Chariot", "min_rounds": 20, "icon": "car", "description": "Steady"}
+    data = {"name": "Chariot", "min_rounds": 20, "icon": "ratha", "description": "Steady"}
     assert client.post(url, {**data, "icon": "rocket"}).status_code == 200  # not one of the drawings
     assert client.post(url, {**data, "min_rounds": 32}).status_code == 200  # another level starts there
     assert client.post(url, data).status_code == 302
@@ -259,3 +259,44 @@ def test_manage_yatra_levels(client, superuser, user):
     client.post(reverse("manage_yatra_edit", args=["utsaha", first.pk]), {"label": "Not yet", "min_minutes": 5, "diya_count": 0})
     first.refresh_from_db()
     assert (first.label, first.min_minutes) == ("Not yet", 0)
+
+
+def test_vehicles_are_the_spiritual_ladder(db):
+    from django.contrib.staticfiles import finders
+
+    levels = list(VehicleLevel.objects.all())
+    assert [(level.min_rounds, level.name, level.icon) for level in levels] == [
+        (0, "Padayātrī", "padayatri"), (4, "Bail-gāḍī", "bail_gadi"), (8, "Naukā", "nauka"), (12, "Pālkī", "palki"),
+        (16, "Ratha", "ratha"), (32, "Haṁsa", "hamsa"), (48, "Puṣpaka Vimāna", "pushpaka"),
+        (64, "Vaikuṇṭha Vimāna", "vaikuntha"),
+    ]
+    # Every level has its short meaning and a drawing that exists; the first drawings stay for a rollback.
+    assert all(level.description for level in levels)
+    for key in [key for key, _label in VehicleLevel.ICONS] + sorted(VehicleLevel.LEGACY_ICONS):
+        assert finders.find(f"img/yatra/{key}.svg"), key
+    assert VehicleLevel(icon="car").icon_path == "img/yatra/car.svg"
+    assert VehicleLevel(icon="rocket").icon_path == "img/yatra/padayatri.svg"
+
+
+def test_sanga_yatra_shows_each_vehicles_meaning(client, sanga):
+    client.force_login(sanga["zara"])
+    html = client.get(reverse("yatra")).content.decode()
+    assert "the 16-round standard" in html and "every step counts" in html
+    assert "img/yatra/padayatri" in html  # "Starting the journey" uses the pilgrim
+
+
+def test_ladder_migration_can_be_reversed(db):
+    from importlib import import_module
+
+    from django.apps import apps
+
+    migration = import_module("sadhana.migrations.0010_vehicle_spiritual_ladder")
+    thresholds = list(VehicleLevel.objects.values_list("min_rounds", flat=True))
+    migration.backwards(apps, None)
+    assert list(VehicleLevel.objects.values_list("name", "icon", "description"))[:2] == [
+        ("Padayatra", "walking", "Walking — every step counts"), ("Cycle", "cycle", ""),
+    ]
+    migration.forwards(apps, None)
+    assert VehicleLevel.objects.get(min_rounds=16).name == "Ratha"
+    # Thresholds and the number of rows never change.
+    assert list(VehicleLevel.objects.values_list("min_rounds", flat=True)) == thresholds

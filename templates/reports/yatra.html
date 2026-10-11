@@ -58,9 +58,12 @@
         <div class="mb-2 flex items-center gap-3">
           {% if group.level %}
             <span class="yatra-icon yatra-icon-sm"><img src="{% static group.level.icon_path %}" alt=""></span>
-            <h3 class="font-serif text-base font-bold">{{ group.level.name }}</h3>
+            <div class="min-w-0">
+              <h3 class="font-serif text-base font-bold leading-tight">{{ group.level.name }}</h3>
+              {% if group.level.description %}<p class="text-xs text-ink/70">{{ group.level.description }}</p>{% endif %}
+            </div>
           {% else %}
-            <span class="yatra-icon yatra-icon-sm"><img src="{% static 'img/yatra/walking.svg' %}" alt=""></span>
+            <span class="yatra-icon yatra-icon-sm"><img src="{% static 'img/yatra/padayatri.svg' %}" alt=""></span>
             <h3 class="font-serif text-base font-bold">{% translate "Starting the journey" %}</h3>
           {% endif %}
           <span class="ml-auto text-xs text-ink/60">{{ group.people|length }}</span>

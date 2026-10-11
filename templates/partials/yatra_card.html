@@ -10,7 +10,7 @@
     {% if journey.vehicle.started %}
       <span class="yatra-icon"><img src="{% static journey.vehicle.level.icon_path %}" alt=""></span>
     {% else %}
-      <span class="yatra-icon"><img src="{% static 'img/yatra/walking.svg' %}" alt=""></span>
+      <span class="yatra-icon"><img src="{% static 'img/yatra/padayatri.svg' %}" alt=""></span>
     {% endif %}
     <div class="min-w-0">
       <p class="text-xs text-ink/70">{% translate "Niścaya" %} · {% if mine %}{% translate "My vehicle" %}{% else %}{% translate "Vehicle" %}{% endif %}</p>

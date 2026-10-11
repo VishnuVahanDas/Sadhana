@@ -211,15 +211,18 @@ class VehicleLevel(models.Model):
 
     # Keys of the drawings in static/img/yatra/<key>.svg.
     ICONS = [
-        ("walking", _("Walking")),
-        ("cycle", _("Cycle")),
-        ("bike", _("Bike")),
-        ("three_wheeler", _("Three-wheeler")),
-        ("car", _("Car")),
-        ("train", _("Train")),
-        ("airplane", _("Airplane")),
-        ("vimana", _("Vaikuntha Vimāna")),
+        ("padayatri", _("Pilgrim with staff and kartāl")),
+        ("bail_gadi", _("Bullock cart")),
+        ("nauka", _("Boat on waves")),
+        ("palki", _("Palanquin")),
+        ("ratha", _("Chariot wheel with flag")),
+        ("hamsa", _("Swan")),
+        ("pushpaka", _("Flower-decked vimāna")),
+        ("vaikuntha", _("Golden vimāna with lotus")),
     ]
+    # The first set of drawings; the files stay so that a rollback still finds its icons.
+    LEGACY_ICONS = {"walking", "cycle", "bike", "three_wheeler", "car", "train", "airplane", "vimana"}
+    DEFAULT_ICON = "padayatri"
 
     min_rounds = models.PositiveIntegerField(_("from (average rounds)"), unique=True)
     name = models.CharField(_("name"), max_length=60)
@@ -237,8 +240,8 @@ class VehicleLevel(models.Model):
 
     @property
     def icon_path(self):
-        known = {key for key, _label in self.ICONS}
-        return f"img/yatra/{self.icon if self.icon in known else 'walking'}.svg"
+        known = {key for key, _label in self.ICONS} | self.LEGACY_ICONS
+        return f"img/yatra/{self.icon if self.icon in known else self.DEFAULT_ICON}.svg"
 
 
 class UtsahaLevel(models.Model):
