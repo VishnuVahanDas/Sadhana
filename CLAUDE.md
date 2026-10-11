@@ -9,7 +9,8 @@ A private, mobile-first Django web app for ISKCON Gorakhpur where ~20–25 devot
 - **Stack:** Python 3.12, Django 5.x, PostgreSQL (psycopg 3), server-rendered templates, Tailwind (standalone CLI), HTMX, Chart.js, openpyxl. No SPA, no React.
 - **Custom User model with email login** must exist before the first migration.
 - **Two roles only:** superuser and user. "Coordinator" is a FK field on User, not a role. Multiple superusers allowed; superusers are also normal users. Never allow removing the last superuser.
-- **Everyone can view everyone's reports** (including notes). No self-registration. No email password reset — superusers reset passwords.
+- **Everyone can view everyone's reports** (including notes). **Analysis (`/analysis/` and its export) is superuser only**; a normal user is redirected to Today with a message.
+- **Display mode** (docs/UPDATE-2026-10-simple-advanced-mode.md): `User.ui_mode` is `simple` (default) or `advanced`. The only difference is that Simple hides streaks, for the reader, on every page. Streaks must not be computed for a Simple reader (pass `show_streaks=request.user.is_advanced` down from the view; templates also get `show_streaks`). Superusers follow their own mode; Analysis always keeps its streak columns. No self-registration. No email password reset — superusers reset passwords.
 - **"Inactive" = `is_participating=False`**: can still log in, hidden from rank tables and group analysis. Do NOT use Django's `is_active` for this.
 - **One entry per user per day**, enforced by a DB `UniqueConstraint(user, date)`; one value per field per entry likewise. Entry form is create-or-update, never a duplicate error.
 - **Configurable fields** (`SadhanaField`) with types `minutes`, `count`, `time`, `boolean`, `text`, plus per-user enable/disable (`UserFieldSetting`). Seed data per SPEC §4.2.

@@ -75,12 +75,15 @@ class UserForm(StyledFormMixin, forms.ModelForm):
         model = User
         fields = [
             "email", "name", "spiritual_name", "phone",
-            "coordinator", "is_coordinator", "is_participating", "is_superuser",
+            "coordinator", "is_coordinator", "is_participating", "is_superuser", "ui_mode",
         ]
         labels = {
             "is_coordinator": _("Is a coordinator (appears in the coordinator list)"),
             "is_participating": _("Active (shown in ranks and group analysis)"),
             "is_superuser": _("Superuser (can manage users, fields and settings)"),
+        }
+        help_texts = {
+            "ui_mode": _("Simple hides the streaks. Advanced also shows them on Today and My Report."),
         }
 
     def __init__(self, *args, **kwargs):

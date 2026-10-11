@@ -7,13 +7,16 @@ from audit.models import AuditLog
 
 from .conftest import PASSWORD
 
-FORM = {"email": "new@example.com", "name": "Gopal Sharma", "spiritual_name": "", "phone": "", "coordinator": ""}
+FORM = {
+    "email": "new@example.com", "name": "Gopal Sharma", "spiritual_name": "", "phone": "", "coordinator": "",
+    "ui_mode": "simple",
+}
 
 
 def edit_data(user, **changes):
     data = {
         "email": user.email, "name": user.name, "spiritual_name": user.spiritual_name, "phone": user.phone,
-        "coordinator": user.coordinator_id or "",
+        "coordinator": user.coordinator_id or "", "ui_mode": user.ui_mode,
     }
     for flag in ("is_coordinator", "is_participating", "is_superuser"):
         if getattr(user, flag):

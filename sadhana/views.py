@@ -11,6 +11,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from accounts.models import UiMode
+from audit import services as audit
+from audit.models import AuditLog
 from audit.services import get_client_ip
 
 from .forms import EntryForm
@@ -75,6 +78,8 @@ def _entry_page(request, date, app_settings):
     )
     history = analytics.load_days(owner)
     month = month_calendar.parse(request.GET.get("month"), date, today)
+    # Streaks follow the reader's display mode; in Simple mode they are not worked out at all.
+    show_streaks = actor.is_advanced
     context = {
         "form": form,
         "owner": owner,
@@ -82,7 +87,7 @@ def _entry_page(request, date, app_settings):
         "streak_badges": [
             {"field": field, "streaks": analytics.field_streaks(history, field, today)}
             for field in fields
-            if has_personal_streak(field)
+            if show_streaks and has_personal_streak(field)
         ],
         "date": date,
         "today": today,
@@ -101,7 +106,10 @@ def _entry_page(request, date, app_settings):
         ],
         "calendar": _calendar(month, date, set(history), owner, actor, app_settings, today),
         # Once the day is saved: the vehicle and that day's Utsāha.
-        "journey": yatra.journey(owner, history, yatra.Setup.load(), utsaha_day=date) if existing else None,
+        "journey": (
+            yatra.journey(owner, history, yatra.Setup.load(), utsaha_day=date, show_streaks=show_streaks)
+            if existing else None
+        ),
     }
     return render(request, "sadhana/entry.html", context)
 
@@ -169,7 +177,30 @@ def my_theme(request):
     if theme == "" or themes.header_color(theme):
         request.user.theme = theme
         request.user.save(update_fields=["theme"])
+    return redirect(_back(request))
+
+
+@require_POST
+def my_mode(request):
+    """A devotee switches their own display mode: Simple hides the streaks, Advanced shows them."""
+    user, mode = request.user, request.POST.get("ui_mode", "")
+    if mode in UiMode.values and mode != user.ui_mode:
+        old, user.ui_mode = user.ui_mode, mode
+        user.save(update_fields=["ui_mode"])
+        audit.log(
+            AuditLog.Action.UI_MODE_CHANGE, user, target_user=user,
+            field_key="ui_mode", old_value=old, new_value=mode, ip=get_client_ip(request),
+        )
+        if user.is_advanced:
+            messages.success(request, _("Advanced view: streaks are shown on Today and My Report."))
+        else:
+            messages.success(request, _("Simple view: your entry, graphs and Excel."))
+    return redirect(_back(request))
+
+
+def _back(request):
+    """Where a small form in the More sheet returns to: the page it was sent from, if that is on this site."""
     back = request.POST.get("next", "")
     if not url_has_allowed_host_and_scheme(back, allowed_hosts={request.get_host()}):
         back = "home"
-    return redirect(back)
+    return back

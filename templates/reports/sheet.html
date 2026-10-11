@@ -2,9 +2,11 @@
 {% load i18n %}
 {% block title %}{% translate "Sheet" %} · {{ site_title }}{% endblock %}
 {% block content %}
+{% if user.is_superuser %}
 <a href="{% url 'analysis' %}" class="mb-1 inline-flex min-h-[44px] items-center gap-1 text-sm font-medium text-maroon">
   <span aria-hidden="true" class="text-lg leading-none">‹</span> {% translate "Back to Analysis" %}
 </a>
+{% endif %}
 <div class="mb-3 flex items-center justify-between gap-2">
   <h1 class="section-title !text-2xl">{% translate "Sheet" %}</h1>
   {% url 'sheet_export' as export_url %}{% include "partials/export_link.html" with url=export_url %}

@@ -15,7 +15,9 @@ def today(db):
 
 @pytest.fixture
 def filled(user, field, today):
-    """Three days of entries for `user`: today, yesterday and 3 days ago."""
+    """Three days of entries for `user` (in Advanced mode, so streaks show): today, yesterday and 3 days ago."""
+    user.ui_mode = "advanced"
+    user.save(update_fields=["ui_mode"])
     for days_ago, hearing, rounds, notes in [(0, 30, 16, "Nice class"), (1, 60, 16, ""), (3, 45, 8, "")]:
         entry = SadhanaEntry.objects.create(user=user, date=today - timedelta(days=days_ago))
         EntryValue.objects.create(entry=entry, field=field("hearing"), value_int=hearing)
@@ -150,7 +152,8 @@ def test_unknown_user_is_404(client, user):
     assert client.get(reverse("dashboard", args=[99999])).status_code == 404
 
 
-def test_home_shows_streak_badges_after_saving(client, user, today):
+def test_home_shows_streak_badges_after_saving(client, make_user, today):
+    user = make_user(ui_mode="advanced")
     client.force_login(user)
     badges = client.get(reverse("home")).context["streak_badges"]
     assert [badge["field"].key for badge in badges] == ["hearing", "reading", "seva", "rounds"]

@@ -31,7 +31,14 @@ class UserManager(BaseUserManager):
         return self.get(email__iexact=email)
 
 
+class UiMode(models.TextChoices):
+    SIMPLE = "simple", _("Simple")
+    ADVANCED = "advanced", _("Advanced")
+
+
 class User(AbstractBaseUser, PermissionsMixin):
+    UiMode = UiMode
+
     email = models.EmailField(_("email"), unique=True)
     name = models.CharField(_("name"), max_length=150)
     spiritual_name = models.CharField(_("spiritual name"), max_length=150, blank=True)
@@ -54,6 +61,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
     # The devotee's own colour theme (keys in sadhana/themes.py); blank follows the site default.
     theme = models.CharField(_("theme"), max_length=20, blank=True, default="")
+    # What this devotee sees: Simple hides the streaks (Dhairya), Advanced shows them.
+    # db_default keeps the default in PostgreSQL too, so a rolled-back release can still add users.
+    ui_mode = models.CharField(
+        _("display mode"), max_length=10, choices=UiMode.choices, default=UiMode.SIMPLE, db_default=UiMode.SIMPLE
+    )
 
     objects = UserManager()
 
@@ -86,3 +98,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def display_name(self):
         return self.spiritual_name or self.name
+
+    @property
+    def is_advanced(self):
+        """Advanced mode: this devotee sees streaks."""
+        return self.ui_mode == UiMode.ADVANCED

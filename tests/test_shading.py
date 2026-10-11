@@ -52,7 +52,8 @@ def today(db):
 @pytest.fixture
 def people(make_user, field, today):
     """Arjuna: 60 min hearing for 9 days plus a 300-minute day and one zero. Bhima: 30 minutes once."""
-    arjuna = make_user(email="a@example.com", name="Arjuna")
+    # Analysis is for superusers.
+    arjuna = make_user(email="a@example.com", name="Arjuna", is_superuser=True)
     bhima = make_user(email="b@example.com", name="Bhima")
     User.objects.update(date_joined=timezone.now() - timedelta(days=365))
     for days_ago in range(11):

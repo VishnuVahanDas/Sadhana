@@ -4,7 +4,7 @@ Oct 11, 2026 · @Vipul
 
 ## Context
 
-The Sadhana Report site at sadhna.iskcongorakhpur.com is live with the original specification (SPEC.md v1.0). This update adds two approved changes on top of it:
+The Sadhana Report site at sr.iskcongorakhpur.com is live with the original specification (SPEC.md v1.0). This update adds two approved changes on top of it:
 
 - **Part A — Chart scaling and festival days:** festival spikes (3–5 hours of seva or reading) no longer squash the normal 0–120 minute days in charts and the heatmap.
 - **Part B — Bhakti Yatra:** rounds become a vehicle, daily minutes become Utsāha (enthusiasm), streaks become Dhairya (patience), and the rank table is replaced by a Sanga Yatra page.

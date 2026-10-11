@@ -2,18 +2,21 @@ from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
+from django.views.decorators.http import require_POST
 
 from audit import services as audit
 from audit.models import AuditLog
 
 from .decorators import superuser_required
 from .forms import PasswordResetForm, UserCreateForm, UserDeleteForm, UserForm
-from .models import User
+from .models import UiMode, User
 
 Action = AuditLog.Action
 
 AUDITED_FIELDS = [
     "email", "name", "spiritual_name", "phone", "coordinator", "is_coordinator", "is_participating", "is_superuser",
+    "ui_mode",
 ]
 
 
@@ -28,13 +31,53 @@ def _action_for(name, new):
         return Action.USER_REACTIVATE if new else Action.USER_DEACTIVATE
     if name == "is_superuser":
         return Action.SUPERUSER_GRANT if new else Action.SUPERUSER_REVOKE
+    if name == "ui_mode":
+        return Action.UI_MODE_CHANGE
     return Action.USER_UPDATE
 
 
 @superuser_required
 def user_list(request):
     users = User.objects.select_related("coordinator").order_by("-is_participating", "name")
-    return render(request, "manage/user_list.html", {"users": users})
+    mode = request.GET.get("mode", "")
+    if mode in UiMode.values:
+        users = users.filter(ui_mode=mode)
+    else:
+        mode = ""
+    return render(request, "manage/user_list.html", {"users": users, "mode": mode, "modes": UiMode.choices})
+
+
+@superuser_required
+@require_POST
+def user_bulk_mode(request):
+    """Set the display mode of the ticked users. One audit row per user whose mode really changed."""
+    mode = request.POST.get("ui_mode", "")
+    ids = [value for value in request.POST.getlist("users") if value.isdigit()]
+    if mode not in UiMode.values:
+        messages.error(request, _("Choose Simple or Advanced."))
+    elif not ids:
+        messages.error(request, _("Tick at least one user first."))
+    else:
+        ip = audit.get_client_ip(request)
+        changed = 0
+        with transaction.atomic():
+            for target in User.objects.filter(pk__in=ids).exclude(ui_mode=mode):
+                old, target.ui_mode = target.ui_mode, mode
+                target.save(update_fields=["ui_mode"])
+                audit.log(
+                    Action.UI_MODE_CHANGE, request.user, target_user=target,
+                    field_key="ui_mode", old_value=old, new_value=mode, ip=ip,
+                )
+                changed += 1
+        messages.success(
+            request,
+            ngettext(
+                "%(count)d user set to %(mode)s.", "%(count)d users set to %(mode)s.", changed
+            ) % {"count": changed, "mode": UiMode(mode).label},
+        )
+    back = request.POST.get("filter", "")
+    url = redirect("manage_users").url
+    return redirect(f"{url}?mode={back}" if back in UiMode.values else url)
 
 
 @superuser_required

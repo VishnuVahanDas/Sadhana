@@ -109,7 +109,8 @@ def today(db):
 @pytest.fixture
 def two_weeks(make_user, field, today):
     """Arjuna: 60 minutes of hearing a day this week, 30 a day the week before. Bhima joined two days ago."""
-    arjuna = make_user(email="a@example.com", name="Arjuna")
+    # Analysis is for superusers.
+    arjuna = make_user(email="a@example.com", name="Arjuna", is_superuser=True)
     bhima = make_user(email="b@example.com", name="Bhima")
     User.objects.filter(pk=arjuna.pk).update(date_joined=timezone.now() - timedelta(days=365))
     User.objects.filter(pk=bhima.pk).update(date_joined=timezone.now() - timedelta(days=2))

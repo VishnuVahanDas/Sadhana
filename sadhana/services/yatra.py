@@ -59,7 +59,7 @@ class Journey:
     utsaha_is_today: bool
     week_utsaha: Utsaha  # average minutes per day over the last 7 days
     dhairya: list  # [{"field", "streaks"}] for the devotee's streak fields
-    together: object  # Streaks of the days with hearing, reading and seva all done
+    together: object  # Streaks of the days with hearing, reading and seva all done; None when streaks are hidden
 
 
 # --- Pure logic -----------------------------------------------------------
@@ -172,8 +172,11 @@ def week_utsaha(user, days, setup):
     return utsaha_for(round(total / len(counted)) if counted else 0, setup.utsaha_levels)
 
 
-def journey(user, days, setup, utsaha_day=None, streak_fields=()):
+def journey(user, days, setup, utsaha_day=None, streak_fields=(), show_streaks=True):
+    """`show_streaks=False` (a Simple-mode reader) leaves every streak out, uncomputed."""
     utsaha_day = utsaha_day or setup.day
+    if not show_streaks:
+        streak_fields = ()
     return Journey(
         vehicle=my_vehicle(user, days=days, setup=setup),
         utsaha=utsaha_for(minutes_offered(days.get(utsaha_day), setup.minute_ids), setup.utsaha_levels),
@@ -183,7 +186,7 @@ def journey(user, days, setup, utsaha_day=None, streak_fields=()):
         dhairya=[
             {"field": field, "streaks": analytics.field_streaks(days, field, setup.today)} for field in streak_fields
         ],
-        together=together_streaks(days, setup.minute_ids, setup.today),
+        together=together_streaks(days, setup.minute_ids, setup.today) if show_streaks else None,
     )
 
 
@@ -198,17 +201,21 @@ def sanga_offering(period, people, days_by_user, setup=None):
     )
 
 
-def road_together(people, days_by_user, setup):
+def road_together(people, days_by_user, setup, show_streaks=True):
     """Devotees grouped by vehicle, names alphabetical within each group; never ordered by score.
 
     Groups run along the road from "Starting the journey" (level None) upwards, and empty ones are left out.
+    `show_streaks=False` (a Simple-mode reader) leaves the flame out, uncomputed.
     """
     groups = {}
     for user in people:
         days = days_by_user[user.pk]
         level = my_vehicle(user, days=days, setup=setup).level
         groups.setdefault(level.pk if level else None, {"level": level, "people": []})["people"].append(
-            {"user": user, "flame": together_streaks(days, setup.minute_ids, setup.today).current}
+            {
+                "user": user,
+                "flame": together_streaks(days, setup.minute_ids, setup.today).current if show_streaks else None,
+            }
         )
     ordered = sorted(groups.values(), key=lambda group: group["level"].min_rounds if group["level"] else -1)
     for group in ordered:

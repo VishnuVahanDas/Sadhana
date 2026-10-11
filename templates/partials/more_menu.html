@@ -28,6 +28,17 @@
         {% endfor %}
       </select>
     </form>
+    <form method="post" action="{% url 'my_mode' %}" class="mt-3 px-3">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <p id="mode-label" class="text-xs font-semibold uppercase tracking-wide text-ink/60">{% translate "Display mode" %}</p>
+      <div class="mt-1 flex gap-2" role="group" aria-labelledby="mode-label">
+        <button type="submit" name="ui_mode" value="simple" class="tab min-h-[44px] flex-1 {% if not user.is_advanced %}tab-active{% endif %}" aria-pressed="{% if user.is_advanced %}false{% else %}true{% endif %}">{% translate "Simple" %}</button>
+        <button type="submit" name="ui_mode" value="advanced" class="tab min-h-[44px] flex-1 {% if user.is_advanced %}tab-active{% endif %}" aria-pressed="{% if user.is_advanced %}true{% else %}false{% endif %}">{% translate "Advanced" %}</button>
+      </div>
+      <p class="mt-1 text-xs text-ink/70"><strong>{% translate "Simple" %}:</strong> {% translate "Your entry, graphs and Excel — a clean view." %}</p>
+      <p class="text-xs text-ink/70"><strong>{% translate "Advanced" %}:</strong> {% translate "Also shows streaks on Today and My Report." %}</p>
+    </form>
     <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}
       <button type="submit" class="sheet-link text-maroon">{% translate "Logout" %}</button>

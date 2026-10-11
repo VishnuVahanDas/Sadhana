@@ -9,6 +9,7 @@ urlpatterns = [
     path("entry/<date:date>/", views.entry, name="entry"),
     path("entry/<date:date>/delete/", views.entry_delete, name="entry_delete"),
     path("theme/", views.my_theme, name="my_theme"),
+    path("mode/", views.my_mode, name="my_mode"),
     path("manage/users/<int:pk>/fields/", manage_views.user_fields, name="manage_user_fields"),
     path("manage/fields/", manage_views.field_list, name="manage_fields"),
     path("manage/fields/add/", manage_views.field_create, name="manage_field_add"),

@@ -173,13 +173,16 @@ def is_measurable(field):
     return field.is_numeric or field.field_type == SadhanaField.FieldType.BOOLEAN
 
 
-def user_rows(users, days_by_user, field, period, today, day_filter=None):
-    """A UserRow per user for one field. `day_filter` narrows the stats; streaks always use all days."""
+def user_rows(users, days_by_user, field, period, today, day_filter=None, show_streaks=True):
+    """A UserRow per user for one field. `day_filter` narrows the stats; streaks always use all days.
+
+    `show_streaks=False` (a Simple-mode reader) leaves the streaks out, uncomputed.
+    """
     return [
         UserRow(
             user=user,
             stats=field_stats(days_by_user[user.pk], field, period, user.date_joined, today, day_filter),
-            streaks=field_streaks(days_by_user[user.pk], field, today) if field.has_streak else None,
+            streaks=field_streaks(days_by_user[user.pk], field, today) if show_streaks and field.has_streak else None,
         )
         for user in users
     ]

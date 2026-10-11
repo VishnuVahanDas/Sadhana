@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
 
+from accounts.decorators import superuser_or_home
 from sadhana.models import AppSettings, Festival, SadhanaEntry, SadhanaField
 from sadhana.services import analytics, comparison, dates, festivals, periods, ranking
 from sadhana.services import yatra as yatra_service
@@ -239,11 +240,15 @@ def _dashboard_data(request, pk):
 def dashboard(request, pk):
     person, today, period, fields, days, rows = _dashboard_data(request, pk)
     rankable = [field for field in fields if field.is_rankable]
+    # Streaks follow the reader's display mode, on their own page and on anyone else's.
+    show_streaks = request.user.is_advanced
     cards = [
         {
             "field": field,
             "stats": analytics.field_stats(days, field, period, person.date_joined, today),
-            "streaks": analytics.field_streaks(days, field, today) if has_personal_streak(field) else None,
+            "streaks": (
+                analytics.field_streaks(days, field, today) if show_streaks and has_personal_streak(field) else None
+            ),
         }
         for field in rankable
     ]
@@ -283,7 +288,8 @@ def dashboard(request, pk):
         "can_edit": request.user == person or request.user.is_superuser,
         "keep": keep,
         "journey": yatra_service.journey(
-            person, days, yatra_service.Setup.load(), streak_fields=[field for field in fields if field.has_streak]
+            person, days, yatra_service.Setup.load(),
+            streak_fields=[field for field in fields if field.has_streak], show_streaks=show_streaks,
         ),
     }
     return render(request, "reports/dashboard.html", context)
@@ -431,6 +437,7 @@ def _festival_summaries(period, people, days_by_user, field):
     return summaries
 
 
+@superuser_or_home
 def analysis(request):
     (today, period, people, coordinator, fields, field, days_by_user, rows,
      days_key, festival_days, day_filter) = _analysis_data(request)
@@ -500,6 +507,7 @@ def _analysis_table(rows, compare):
     ]
 
 
+@superuser_or_home
 def analysis_export(request):
     (today, period, people, coordinator, _fields, field, days_by_user, rows,
      days_key, festival_days, day_filter) = _analysis_data(request)
@@ -543,12 +551,15 @@ def _ranks_data(request):
     period = periods.from_request(request.GET, today)
     people, coordinator = _scope(request)
     fields, field = _rankable_field(request, "metric")
-    option = ranking.choose(field, request.GET.get("by", "")) if field else None
+    # A Simple-mode reader has no streak options, even with ?by=current typed in.
+    show_streaks = request.user.is_advanced
+    option = ranking.choose(field, request.GET.get("by", ""), show_streaks) if field else None
     days_key, _festival_days, day_filter = _day_filter(request, period)
     ranked = []
     if field:
         days_by_user = analytics.load_days_for_users(people)
-        ranked = ranking.rank_rows(analytics.user_rows(people, days_by_user, field, period, today, day_filter), option)
+        rows = analytics.user_rows(people, days_by_user, field, period, today, day_filter, show_streaks)
+        ranked = ranking.rank_rows(rows, option)
     return period, coordinator, fields, field, option, ranked, days_key
 
 
@@ -573,7 +584,7 @@ def ranks(request):
         "fields": fields,
         "field": field,
         "option": option,
-        "options": ranking.options_for(field) if field else [],
+        "options": ranking.options_for(field, request.user.is_advanced) if field else [],
         "coordinator": coordinator,
         "coordinators": User.objects.filter(is_coordinator=True),
         "day_filters": festivals.DAY_FILTERS,
@@ -741,8 +752,11 @@ def yatra(request):
     days_by_user = analytics.load_days_for_users(people)
     # An inactive devotee still sees their own journey; they are just not on the road list.
     my_days = days_by_user[request.user.pk] if request.user.pk in days_by_user else analytics.load_days(request.user)
-    streak_fields = [field for field in effective_fields(request.user) if field.has_streak]
-    journey = yatra_service.journey(request.user, my_days, setup, streak_fields=streak_fields)
+    show_streaks = request.user.is_advanced
+    streak_fields = [field for field in effective_fields(request.user) if field.has_streak] if show_streaks else []
+    journey = yatra_service.journey(
+        request.user, my_days, setup, streak_fields=streak_fields, show_streaks=show_streaks
+    )
     longest = max(journey.dhairya, key=lambda item: item["streaks"].longest, default=None)
     spans = [
         (_("Today"), Period(periods.CUSTOM, setup.day, setup.day)),
@@ -753,7 +767,7 @@ def yatra(request):
         "journey": journey,
         "longest_dhairya": longest if longest and longest["streaks"].longest else None,
         "best_day": yatra_service.best_day(my_days, setup.minute_ids, setup.day.replace(day=1), setup.day),
-        "groups": yatra_service.road_together(people, days_by_user, setup),
+        "groups": yatra_service.road_together(people, days_by_user, setup, show_streaks),
         "offerings": [
             {"label": label, **_offering(yatra_service.sanga_offering(span, people, days_by_user, setup))}
             for label, span in spans

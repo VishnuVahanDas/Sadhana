@@ -75,7 +75,7 @@
       <p class="card text-sm text-ink/70">{% translate "No active devotees yet." %}</p>
     {% endfor %}
   </div>
-  <p class="mt-2 text-xs text-ink/60">{% translate "Names are in alphabetical order. 🔥 is Dhairya: days in a row with hearing, reading and seva all done." %}</p>
+  <p class="mt-2 text-xs text-ink/60">{% translate "Names are in alphabetical order." %}{% if show_streaks %} {% translate "🔥 is Dhairya: days in a row with hearing, reading and seva all done." %}{% endif %}</p>
 </section>
 
 <section aria-label="{% translate 'Sanga offering' %}">

@@ -43,7 +43,10 @@ There are only **two roles**. "Coordinator" is **not** a role — it is a groupi
 |---|---|---|
 | Log in (email + password) | ✅ | ✅ |
 | Fill / edit own sadhana entries | ✅ (subject to settings, §7) | ✅ (never locked) |
-| View **everyone's** reports, analysis, ranks, notes | ✅ | ✅ |
+| View **everyone's** reports, ranks, notes | ✅ | ✅ |
+| View Analysis (`/analysis/`) and its export | ❌ (redirected to Today) | ✅ |
+| See streaks | Only in Advanced display mode | Only in Advanced display mode (Analysis always shows them) |
+| Switch own display mode (Simple / Advanced) | ✅ | ✅ (and anyone's, single or bulk) |
 | Change own password | ✅ | ✅ |
 | Export reports / rank tables to Excel | ✅ | ✅ |
 | Add / edit users | ❌ | ✅ |
@@ -319,7 +322,8 @@ Selectors:
 | `/me/` | All | Redirect to own individual dashboard |
 | `/devotees/` | All | Directory of all users (search, filter by coordinator, active/inactive) |
 | `/u/<id>/` | All | Individual dashboard (§7.3) |
-| `/analysis/` | All | Group/All dashboard (§7.4) |
+| `/analysis/` | Superuser | Group/All dashboard (§7.4); others are redirected to Today |
+| `/mode/` | All | POST: switch own display mode (docs/UPDATE-2026-10-simple-advanced-mode.md) |
 | `/ranks/` | All | Rank table (§8); redirects to `/yatra/` unless `rank_table_enabled` is on |
 | `/yatra/` | All | Sanga Yatra: verse, My Journey, On the road together, Sanga offering |
 | `/manage/festivals/` | Superuser | Festival days |
@@ -332,7 +336,7 @@ Selectors:
 | `/manage/audit/` | Superuser | Filterable audit log (by user, action, date) |
 | `/admin/` | Superuser | Django admin as a backup tool |
 
-Navigation (mobile bottom bar): **Today · My Report · Sanga Yatra · Analysis · More** (More → Devotees, Change password, Manage* for superusers, Logout).
+Navigation (mobile bottom bar): **Today · My Report · Sanga Yatra · Analysis (superusers only) · More** (More → Devotees, Change password, Manage* for superusers, Logout).
 
 **Password reset by superuser:** superuser sets a temporary password (or clicks "generate"), shown once on screen to share with the devotee; `must_change_password=True`.
 

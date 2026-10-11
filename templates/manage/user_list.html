@@ -5,11 +5,34 @@
   <h1 class="text-xl font-bold text-maroon">{% translate "Users" %} <span class="text-base font-normal text-ink/60">({{ users|length }})</span></h1>
   <a href="{% url 'manage_user_add' %}" class="btn-primary !w-auto">{% translate "Add user" %}</a>
 </div>
+<form method="get" class="mb-3">
+  <label for="mode" class="mb-1 block text-sm font-medium">{% translate "Display mode" %}</label>
+  <select id="mode" name="mode" class="input" data-autosubmit>
+    <option value="">{% translate "All" %}</option>
+    {% for key, label in modes %}
+      <option value="{{ key }}" {% if key == mode %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+{# The tick boxes below belong to this form through their form="bulk-mode" attribute. #}
+<form id="bulk-mode" method="post" action="{% url 'manage_users_mode' %}" class="card mb-3">
+  {% csrf_token %}
+  <input type="hidden" name="filter" value="{{ mode }}">
+  <p class="mb-2 text-sm">{% translate "Tick users below, then set their display mode:" %}</p>
+  <div class="flex flex-wrap gap-2">
+    <button type="submit" name="ui_mode" value="simple" class="btn-secondary">{% translate "Set to Simple" %}</button>
+    <button type="submit" name="ui_mode" value="advanced" class="btn-secondary">{% translate "Set to Advanced" %}</button>
+  </div>
+</form>
 <ul class="space-y-3">
   {% for person in users %}
     <li class="card {% if not person.is_participating %}opacity-70{% endif %}">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="font-serif text-lg font-bold">{{ person.display_name }}</span>
+        <label class="flex min-h-[44px] items-center gap-3">
+          <input type="checkbox" name="users" value="{{ person.pk }}" form="bulk-mode" class="checkbox" aria-label="{% blocktranslate with name=person.display_name %}Select {{ name }}{% endblocktranslate %}">
+          <span class="font-serif text-lg font-bold">{{ person.display_name }}</span>
+        </label>
+        <span class="badge {% if person.is_advanced %}bg-gold/30{% else %}bg-cream-dark{% endif %}">{{ person.get_ui_mode_display }}</span>
         {% if not person.is_participating %}<span class="badge bg-cream-dark">{% translate "Inactive" %}</span>{% endif %}
         {% if person.is_superuser %}<span class="badge bg-maroon text-cream">{% translate "Superuser" %}</span>{% endif %}
         {% if person.is_coordinator %}<span class="badge bg-gold/30">{% translate "Coordinator" %}</span>{% endif %}
@@ -27,6 +50,8 @@
         <a href="{% url 'manage_user_password' person.pk %}" class="btn-secondary">{% translate "Reset password" %}</a>
       </div>
     </li>
+  {% empty %}
+    <li class="card text-sm text-ink/70">{% translate "No users in this mode." %}</li>
   {% endfor %}
 </ul>
 {% endblock %}

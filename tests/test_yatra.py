@@ -140,10 +140,10 @@ def log(field, today):
 def sanga(make_user, log):
     """Zara and Arjuna in a car, Bhima on foot, a newcomer, and an inactive devotee in the vimāna."""
     people = {
-        "zara": make_user(email="z@example.com", name="Zara"),
+        "zara": make_user(email="z@example.com", name="Zara", ui_mode="advanced"),
         "arjuna": make_user(email="a@example.com", name="Arjuna"),
         "bhima": make_user(email="b@example.com", name="Bhima"),
-        "new": make_user(email="n@example.com", name="Nava"),
+        "new": make_user(email="n@example.com", name="Nava", ui_mode="advanced"),
         "gone": make_user(email="g@example.com", name="Gone", is_participating=False),
     }
     User.objects.update(date_joined=timezone.now() - timedelta(days=365))

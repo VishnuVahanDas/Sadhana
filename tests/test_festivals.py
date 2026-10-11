@@ -79,7 +79,11 @@ def test_day_filter():
 @pytest.fixture
 def festival_week(make_user, field, today):
     """Two devotees with ten steady days of 60 minutes seva; four days ago was a festival (300 and 240)."""
-    people = [make_user(email="a@example.com", name="Arjuna"), make_user(email="b@example.com", name="Bhima")]
+    # Arjuna reads Analysis (superusers only) and ranks by streak (Advanced mode only).
+    people = [
+        make_user(email="a@example.com", name="Arjuna", is_superuser=True, ui_mode="advanced"),
+        make_user(email="b@example.com", name="Bhima"),
+    ]
     User.objects.update(date_joined=timezone.now() - timedelta(days=365))
     for person, festival_minutes in zip(people, (300, 240)):
         for days_ago in range(10):

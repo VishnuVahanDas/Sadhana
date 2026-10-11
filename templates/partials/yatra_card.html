@@ -3,7 +3,7 @@
 <section class="card stat-card mb-4" aria-label="{% translate 'Bhakti Yatra' %}">
   <div class="mb-2 flex items-center justify-between gap-2">
     <h2 class="text-base font-bold text-maroon">{% translate "Bhakti Yatra" %}</h2>
-    <button type="button" class="info-btn" data-yatra-info aria-label="{% translate 'What do Utsāha, Niścaya and Dhairya mean?' %}">ⓘ</button>
+    <button type="button" class="info-btn" data-yatra-info aria-label="{% if show_streaks %}{% translate 'What do Utsāha, Niścaya and Dhairya mean?' %}{% else %}{% translate 'What do Utsāha and Niścaya mean?' %}{% endif %}">ⓘ</button>
   </div>
 
   <div class="flex items-center gap-3">

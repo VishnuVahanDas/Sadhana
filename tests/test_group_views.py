@@ -30,7 +30,8 @@ def group(make_user, field, today):
         "madhava": coordinator,
         "arjuna": make_user(email="arjuna@example.com", name="Arjuna", coordinator=coordinator),
         "bhima": make_user(email="bhima@example.com", name="Bhima", coordinator=coordinator),
-        "solo": make_user(email="solo@example.com", name="Solo"),
+        # The reader in these tests: Analysis is for superusers, streak ranks for Advanced mode.
+        "solo": make_user(email="solo@example.com", name="Solo", is_superuser=True, ui_mode="advanced"),
         "inactive": make_user(email="gone@example.com", name="Gone", is_participating=False),
     }
     User.objects.update(date_joined=timezone.now() - timedelta(days=365))

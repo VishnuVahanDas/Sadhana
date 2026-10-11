@@ -29,14 +29,14 @@ OPTIONS = [
 ]
 
 
-def options_for(field):
-    """Streak options only exist for fields that have streaks (so not for Rounds)."""
-    return [option for option in OPTIONS if field.has_streak or not option.is_streak]
+def options_for(field, show_streaks=True):
+    """Streak options only exist for fields that have streaks (so not for Rounds), and for readers who see streaks."""
+    return [option for option in OPTIONS if (show_streaks and field.has_streak) or not option.is_streak]
 
 
-def choose(field, key):
-    """The requested option if this field supports it, else the default (Total)."""
-    available = {option.key: option for option in options_for(field)}
+def choose(field, key, show_streaks=True):
+    """The requested option if this field and this reader support it, else the default (Total)."""
+    available = {option.key: option for option in options_for(field, show_streaks)}
     return available.get(key) or available[DEFAULT]
 
 
